@@ -2,7 +2,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 
-#curl -qsL https://raw.githubusercontent.com/BeerK0in/generator-gunbot/master/install.sh | bash -- && exec bash
+#curl -qsL https://raw.githubusercontent.com/FulbrightNguyen/happylife/master/Install.sh | bash -- && exec bash
 
 clear
 echo
@@ -48,11 +48,11 @@ logMessage "(1) Update the base system & Install traffic exchange apps..."
 #- VNC client
 cd /home/
 ##PREPARE VNC Server with multiple users
-sudo apt update && sudo apt upgrade -y && sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y
+sudo apt update && sudo apt upgrade -y && sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel expect -y
 #then add users
 vncserver
 
-echo '#! /usr/bin/expect
+echo '#!/usr/bin/expect -f
 spawn sudo vncserver
 expect "Password:"
 send "Win@123\r"
@@ -61,7 +61,7 @@ send "Win@123\r"
 expect off' > setpwd_vnc_root.sh
 chmod 777 setpwd_vnc_root.sh
 ./setpwd_vnc_root.sh
-
+#hard return (\r )
 rm -rf setpwd_vnc_root.sh
 
 vncserver -kill :1
@@ -94,7 +94,7 @@ su $USER1 -c "apt install gnome-core xfce4 xfce4-goodies tightvncserver autocuts
 su $USER1 -c "vncserver :2"
 su $USER1 -c "mv ~/.vnc/xstartup ~/.vnc/xstartup.backup"
 
-echo '#! /usr/bin/expect
+echo '#!/usr/bin/expect -f
 spawn sudo vncserver
 expect "Password:"
 send "Win@123\r"
@@ -137,7 +137,7 @@ su $USER2 -c "apt install gnome-core xfce4 xfce4-goodies tightvncserver autocuts
 su $USER2 -c "vncserver :3"
 su $USER2 -c "mv ~/.vnc/xstartup ~/.vnc/xstartup.backup"
 
-echo '#! /usr/bin/expect
+echo '#!/usr/bin/expect -f
 spawn sudo vncserver
 expect "Password:"
 send "Win@123\r"
@@ -555,11 +555,15 @@ sed -i 's/\bexec -a "$0" "$HERE/chrome" "$@"\b/& --no-sandbox/' /usr/bin/google-
 # apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886
 # apt-get update
 # apt-get install oracle-java8-installer
-#Ubuntu:
- sudo apt-get install python-software-properties -y
- sudo add-apt-repository ppa:webupd8team/java -y
- sudo apt-get update -y
- sudo apt-get --allow-unauthenticated install oracle-java8-installer -y
+
+echo "Ubuntu Java Installer (Oracle JDK)"
+sudo add-apt-repository -y ppa:webupd8team/java
+sudo apt-get update
+sudo apt-get install -y python-software-properties debconf-utils
+echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | sudo debconf-set-selections
+sudo apt-get install -y oracle-java8-installer
+sudo apt install oracle-java8-set-default
+
 #select Java version (Optional)
  update-alternatives --config java
 #Open and edit /etc/profile file
@@ -831,9 +835,9 @@ logMessage "(5/6) Install a StorJ miner"
 #Configure a StorJ share location with a command like this:
 #After running the storjshare-create command, it brings up an editor that lets you review and change any configuration details you need to. 
 #Just type this command to save and close the editor:
- :wq
+# :wq
 
-echo '#! /usr/bin/expect -f
+echo '#!/usr/bin/expect -f -f
 spawn sudo storjshare-create --storj 0xAF99AaBBD2fF63C3cb6855E5BE87F243b7f88D09 --storage /storj --size 5GB
 send ":wq\r"
 expect off' > configStorj.sh
@@ -862,14 +866,14 @@ sudo storjshare start --config /root/.config/storjshare/configs/d616431de0ee853f
  sudo service ntp stop
  sudo ntpdate -s time.nist.gov
  sudo service ntp start
- timedatectl status
- timedatectl list-timezones
- sudo timedatectl set-timezone <your timezone>
- e.g. "sudo timedatectl set-timezone Europe/Rome"
-
+# timedatectl status
+# timedatectl list-timezones
+# sudo timedatectl set-timezone <your timezone>
+#e.g. "sudo timedatectl set-timezone Europe/Rome"
+sudo timedatectl set-timezone UTC
 #Alternatively
 #Edit the ntp config file: 
- sudo nano /etc/ntp.conf
+# sudo nano /etc/ntp.conf
 
 #You’ll find a lot of lines in that file, but the important ones are the server lines. 
 #You can get a list of server addresses at pool.ntp.org, find the preferred ones for your area, and then add them to the file. 
@@ -886,12 +890,11 @@ sed -i s'/server 3.ubuntu.pool.ntp.org/server 3.it.pool.ntp.org/g' nano /etc/ntp
  ntpd restart
  
 #Have the Storjshare daemon run when reboot:
- cd ~/.config/storjshare/
- echo '#!/bin/bash
- sudo storjshare daemon && sudo storjshare start --config /root/.config/storjshare/configs/$(find /root/.config/storjshare/configs/ -type f -name "*.json") > /dev/null 2>&1
+echo '#!/bin/bash
+ sudo storjshare daemon && sudo storjshare start --config /root/.config/storjshare/configs/$StorjConfigFile > /dev/null 2>&1
  ' >> /root/.config/storjshare/storjdaemon
  
- chmod a+x /root/.config/storjshare/storjdaemon
+chmod uga+x /root/.config/storjshare/storjdaemon
  
 sed -i '$ a 0 * * * * export DISPLAY=:1 && root /root/.config/storjshare/storjdaemon' /etc/crontab
 
