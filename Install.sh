@@ -50,8 +50,7 @@ cd /home/
 ##PREPARE VNC Server with multiple users
 sudo apt update && sudo apt upgrade -y && sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel expect -y
 #then add users
-vncserver
-
+#vncserver
 echo '#!/usr/bin/expect -f
 spawn sudo vncserver
 expect "Password:"
@@ -65,21 +64,21 @@ chmod 777 setpwd_vnc_root.sh
 rm -rf setpwd_vnc_root.sh
 
 vncserver -kill :1
-mv ~/.vnc/xstartup ~/.vnc/xstartup.backup
+mv /root/.vnc/xstartup /root/.vnc/xstartup.backup
 
-#nano ~/.vnc/xstartup
+#nano /root/.vnc/xstartup
 echo '#!/bin/bash
 [ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
 autocutsel -fork
 startxfce4 &
-' > ~/.vnc/xstartup
+' > /root/.vnc/xstartup
 
 #make it executable:  
-sudo chmod +x ~/.vnc/xstartup
-vncserver :1
+sudo chmod +x /root/.vnc/xstartup
+#vncserver :1
 
 #Add another users
-$USER1='honeycomb01'
+USER1='honeycomb01'
 sudo adduser honeycomb01
 sudo usermod -aG sudo honeycomb01
 
@@ -89,82 +88,75 @@ if [ $(whoami) != "$USER1" ]; then
 #or
 #sudo -u user "command"
 su $USER1 -c "cd /home/"
-su $USER1 -c "apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
 #install necessary stuff for desktop
-su $USER1 -c "vncserver :2"
-su $USER1 -c "mv ~/.vnc/xstartup ~/.vnc/xstartup.backup"
+su $USER1 -c "apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
 
 echo '#!/usr/bin/expect -f
-spawn sudo vncserver
+spawn sudo vncserver :2
 expect "Password:"
 send "Win@123\r"
 expect "Verify:"
 send "Win@123\r"
 expect off' > setpwd_vnc_honeycomb01.sh
 chmod 777 setpwd_vnc_honeycomb01.sh
-./setpwd_vnc_honeycomb01.sh
-
+#./setpwd_vnc_honeycomb01.sh
+su $USER1 -c "./setpwd_vnc_honeycomb01.sh"
 su $USER1 -c "rm -rf setpwd_vnc_honeycomb01.sh"
 
+su $USER1 -c "mv /home/$USER1/.vnc/xstartup /home/$USER1/.vnc/xstartup.backup"
 #nano ~/.vnc/xstartup
 echo '#!/bin/bash
 [ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
 autocutsel -fork
 startxfce4 &
-' > ~/.vnc/xstartup
-
+' > /home/$USER1/.vnc/xstartup
 #make it executable:  
-su $USER1 -c "chmod +x ~/.vnc/xstartup"
+su $USER1 -c "chmod +x /home/$USER1/.vnc/xstartup"
 su $USER1 -c "vncserver -kill :2"
 su $USER1 -c "exit"
 
 fi
 
-
 #Add another users
-$USER2='honeycomb02'
-sudo adduser honeycomb01
+USER2='honeycomb02'
+sudo adduser honeycomb02
 sudo usermod -aG sudo honeycomb02
-
 if [ $(whoami) != "$USER2" ]; then
 #Run command in other user by using
 #su user -c "command"
 #or
 #sudo -u user "command"
 su $USER2 -c "cd /home/"
-su $USER2 -c "apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
 #install necessary stuff for desktop
-su $USER2 -c "vncserver :3"
-su $USER2 -c "mv ~/.vnc/xstartup ~/.vnc/xstartup.backup"
+su $USER2 -c "apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
 
 echo '#!/usr/bin/expect -f
-spawn sudo vncserver
+spawn sudo vncserver :3
 expect "Password:"
 send "Win@123\r"
 expect "Verify:"
 send "Win@123\r"
 expect off' > setpwd_vnc_honeycomb02.sh
 chmod 777 setpwd_vnc_honeycomb02.sh
-./setpwd_vnc_honeycomb02.sh
-
+su $USER2 -c "./setpwd_vnc_honeycomb02.sh"
 su $USER2 -c "rm -rf setpwd_vnc_honeycomb02.sh"
 
+su $USER2 -c "mv /home/$USER2/.vnc/xstartup /home/$USER2/.vnc/xstartup.backup"
 #nano ~/.vnc/xstartup
 echo '#!/bin/bash
 [ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
 autocutsel -fork
 startxfce4 &
-' > ~/.vnc/xstartup
-
+' > /home/$USER2/.vnc/xstartup
 #make it executable:  
-su $USER1 -c "chmod +x ~/.vnc/xstartup"
-su $USER1 -c "vncserver -kill :3"
-su $USER1 -c "exit"
+su $USER2 -c "chmod +x /home/$USER2/.vnc/xstartup"
+su $USER2 -c "vncserver -kill :3"
+su $USER2 -c "exit"
 
 fi
 
 #So, switch to root (it is just more easier) and then create vncserver folder and create file as vncservers.conf:
- sudo su -
+sudo su -
 
 echo 'honeycomb01 ALL=(ALL) NOPASSWD: ALL
  honeycomb02 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
@@ -175,7 +167,7 @@ echo 'VNCSERVERS="1:root 2:honeycomb01 3:honeycomb02"
 VNCSERVERARGS[1]="-geometry 1024x768 -depth 24"
 VNCSERVERARGS[2]="-geometry 1024x768 -depth 24"
 VNCSERVERARGS[3]="-geometry 1024x768 -depth 24"
-' >> /etc/vncserver/vncservers.conf
+' > /etc/vncserver/vncservers.conf
  
 #Create vnc service file
 #sudo nano /etc/init.d/vncserver
@@ -259,18 +251,17 @@ service vncserver start
 #/etc/init.d/vncserver start
 #Check that its running
 
-dbus-uuidgen > /var/lib/dbus/machine-id
 #Go to Desktop
-cd /home
+cd /home/
 #Download toolkit from github
 #git init
 git clone https://github.com/nnquangminh/mmo.git
 #git remote add origin https://github.com/nnquangminh/mmo.git
 #git pull origin master
 #Extract file
-tar Jxvf /home/mmo/hit.tar.xz -C ~/Desktop/ && unzip /home/mmo/kilohits.com-viewer-linux-x64.zip -d ~/Desktop/ && unzip /home/mmo/OtohitsApp_3107_Linux.zip -d ~/Desktop/ && unzip /home/mmo/crossover_13.1.3-1.zip -d ~/Desktop/mmo/ && unzip /home/mmo/jingling.zip -d ~/Desktop/ && unzip /home/mmo/proxy_scraper.zip -d /home/proxy
-tar Jxvf /home/mmo/hit.tar.xz -C /home/honeycomb01/Desktop/ && unzip /home/mmo/kilohits.com-viewer-linux-x64.zip -d /home/honeycomb01/Desktop/ && unzip /home/mmo/OtohitsApp_3107_Linux.zip -d /home/honeycomb01/Desktop/
-tar Jxvf /home/mmo/hit.tar.xz -C /home/honeycomb02/Desktop/ && unzip /home/mmo/kilohits.com-viewer-linux-x64.zip -d /home/honeycomb02/Desktop/ && unzip /home/mmo/OtohitsApp_3107_Linux.zip -d /home/honeycomb02/Desktop/
+sudo tar Jxvf /home/mmo/hit.tar.xz -C /root/Desktop/ && unzip /home/mmo/kilohits.com-viewer-linux-x64.zip -d /root/Desktop/ && unzip /home/mmo/OtohitsApp_3107_Linux.zip -d /root/Desktop/ && unzip /home/mmo/crossover_13.1.3-1.zip -d /root/Desktop/mmo/ && unzip /home/mmo/jingling.zip -d /root/Desktop/ && unzip /home/mmo/proxy_scraper.zip -d /home/proxy
+sudo tar Jxvf /home/mmo/hit.tar.xz -C /home/honeycomb01/Desktop/ && unzip /home/mmo/kilohits.com-viewer-linux-x64.zip -d /home/honeycomb01/Desktop/ && unzip /home/mmo/OtohitsApp_3107_Linux.zip -d /home/honeycomb01/Desktop/
+sudo tar Jxvf /home/mmo/hit.tar.xz -C /home/honeycomb02/Desktop/ && unzip /home/mmo/kilohits.com-viewer-linux-x64.zip -d /home/honeycomb02/Desktop/ && unzip /home/mmo/OtohitsApp_3107_Linux.zip -d /home/honeycomb02/Desktop/
 sudo chown honeycomb01 -R /home/honeycomb01/Desktop/* && sudo chmod ugo+x -R /home/honeycomb01/Desktop/* && sudo chown honeycomb02 -R /home/honeycomb02/Desktop/* && sudo chmod ugo+x -R /home/honeycomb02/Desktop/*
 #or 
 #Hitleap
@@ -284,9 +275,8 @@ sudo chown honeycomb01 -R /home/honeycomb01/Desktop/* && sudo chmod ugo+x -R /ho
 
 #Libnss3 (kilohits) libcurl3 (Otohits) firefox(websyndic)
 apt install libnss3 libcurl3 firefox -y
-  
 #Have the Hitleap, Kilohits, Otohits run when reboot:
-mkdir $HOME/.config/autostart
+mkdir /root/.config/autostart
 #sudo nano /usr/local/bin/autostart.sh
 echo '#!/bin/bash
 export DISPLAY=:1 && firefox | /home/OtohitsApp/./OtohitsApp | /home/kilohits.com-viewer-linux-x64/./kilohits.com-viewer | (/home/app/./HitLeap-Viewer && wait)
@@ -300,11 +290,9 @@ Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
 Name=Startup Script
-' >> ~/.config/autostart/.desktop
+' >> /root/.config/autostart/.desktop
 #sudo nano ~/.config/autostart/.desktop
-
 chmod ugo+x ~/.config/autostart/.desktop
-
 #Next Install for Jingling & Traffic Spirit
 #Install wine
 #If have old wine version then run following command to remove
@@ -379,7 +367,6 @@ killall firefox
 sleep 10
 done
 ' >> /root/autorestartCrashedApp
-
 chmod +x /root/autorestartCrashedApp
 #crontab -e
 
@@ -410,7 +397,7 @@ TEMP=$TMPDIR
 
 export TMPDIR TMP TEMP
 
-' >> nano /etc/profile
+' >> /etc/profile
 #type reboot on your terminal screen to restart your system with new settings
 # reboot
 #We are ready to run multiple traffic exchange viewers but we need proxy settings to each viewers now. We will install the proxychains for this
@@ -450,35 +437,29 @@ cp /etc/proxychains.conf /etc/honeycomb02.conf
 #tcp_read_time_out 15000
 #tcp_connect_time_out 8000
 #[ProxyList] http IP_NUMBER PORT_NUMBER USER_NAME PASSWORD
-
 #(End)
-#ex: http 116.48.136.128 8080
+#eg: http 116.48.136.128 8080
 #STEP 4: Installing traffic viewers
 #Open firefox and login to your kilohits account. Click viewer and click linux viewer to download it. After download finished extract it.
 #STEP 5: Running viewer with proxychains
 #Type this command on the terminal screen to run first viewer
 # proxychains4 -f /etc/proxychains57.conf /home/USER_NAME/Downloads/PATH_TO_VIEWER/VIEWER_NAME
-#ex:remote from root: export DISPLAY=:2 && proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer
- 
+#eg:remote from root: export DISPLAY=:2 && proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer
 # proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/app/HitLeap-Viewer
 # proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer
-
 #-f /etc /etc/proxychains57.conf line means you are running viewer with this proxy settings. 
 #You can change this and run multiple viewers with each proxy settings. Dont run another instance on the same user for same viewer, 
 #it will use same proxy. Create another user and change proxy conf settings and run the viewer.
-
 #STEP 6: Run multiple viewers
 #Create another user on ubuntu
 #Switch to new user
 #Download or copy viewer to this users home directory or whereever you want
 #Change proxy configuration file on the command line proxychains4 and run another viewer, like this:
-
 # proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/app/HitLeap-Viewer
 # proxychains4 -f /etc/honeycomb02.conf /home/honeycomb02/Desktop/app/HitLeap-Viewer
 # proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer
 # proxychains4 -f /etc/honeycomb02.conf /home/honeycomb02/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer
 # proxychains4 -f /etc/anotherconf.conf /home/USER_NAME/Downloads/PATH_TO_VIEWER/VIEWER_NAME
-
 #ProxyList
 #cd ~/
 #git clone https://github.com/FulbrightNguyen/dragonball.git
@@ -486,7 +467,6 @@ cp /etc/proxychains.conf /etc/honeycomb02.conf
  chmod ugo+x /home/proxy/*
 # cd /home/proxy
 # ./proxy_scraper.sh
-
 #login honeycomb01 user
  su $USER1
  su $USER1 -c "cd /home/"
@@ -514,19 +494,17 @@ chmod ugo+x /home/honeycomb02/autostarthoneycomb02
 #echo '0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autostarthoneycomb02' >> /etc/crontab
 sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autostarthoneycomb02' /etc/crontab
 
-
 logMessage "(3/6) eBesucher hang up money tutorial (LXDE + VNC + restarter)"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Hang up conditions: VPS memory 512M or more; A European IP VPS
 ##PREPARE VNC Server with multiple users
 #Use cpulimit to limit the use of firefox to prevent stuck
- sudo apt-get install cpulimit
+sudo apt-get install cpulimit
 # linux -> cpulimit -> "sudo apt-get install cpulimit " then "cpulimit -p PID -l 10 -v" -> this means limit this pid to 10% if cpu. You can also just use paths or names like "cpulimit -e firefox -l 10 -v".
 # limit firefox use 50% cpu utilization 
 # sudo cpulimit -e firefox -l 50 > /dev/null 2>&1
 #(2)Install the browser and Flash
 cd /home/mmo/
-
 #It is recommended to install two browsers to switch at any time
 #Install Firefox:
 #sudo apt-get install firefox -y
@@ -555,7 +533,6 @@ sed -i 's/\bexec -a "$0" "$HERE/chrome" "$@"\b/& --no-sandbox/' /usr/bin/google-
 # apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886
 # apt-get update
 # apt-get install oracle-java8-installer
-
 echo "Ubuntu Java Installer (Oracle JDK)"
 sudo add-apt-repository -y ppa:webupd8team/java
 sudo apt-get update
@@ -563,7 +540,6 @@ sudo apt-get install -y python-software-properties debconf-utils
 echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | sudo debconf-set-selections
 sudo apt-get install -y oracle-java8-installer
 sudo apt install oracle-java8-set-default
-
 #select Java version (Optional)
  update-alternatives --config java
 #Open and edit /etc/profile file
@@ -579,7 +555,6 @@ sed -i '$ a export JAVA_HOME="/usr/lib/jvm/java-8-oracle/jre/bin/java"' /etc/pro
 # JAVA_HOME="/usr/lib/jvm/java-8-oracle/jre/bin/java"
 #Reload this file, so that changes can get applied effectively
 source /etc/profile
-
 #(4)Install the restarter (optional)
 #The restarter is an on-hook helper provided by ebesucher that automatically restarts the browser 
 #when the browser has an error (surfing the window, stuck, crashing, etc.), which greatly facilitates us to hang up and avoid manual maintenance. 
@@ -589,7 +564,7 @@ source /etc/profile
  sudo unzip restarter-setup-others.v1.2.03.zip
 #Install java and restarter, through the vnc viewer into the desktop, start the terminal interface root terminal enter the following command:
  export DISPLAY=:1 && sudo java -jar restarter.jar
-
+dbus-uuidgen > /var/lib/dbus/machine-id
 #(5)Set the restarter (optional)
 #Start the restarter after the need to set the restarter
 #Enter username and CODE can found in http://www.ebesucher.com/restarter.html 
@@ -733,105 +708,42 @@ sudo service cron restart
 #		sleep 300
 #done' > autorestartFirefox.sh 
 
- 
-logMessage "(4/6) Set Up a Node.js Application for Production"
+logMessage "(4/6) Install a StorJ miner"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #How to install a StorJ miner on Ubuntu via Command Line
 #----------------------------------------------------------------------------------------------------------------------------------------
-#Download and setup the APT repository add the PGP key to the system’s APT keychain,
- sudo apt-get install -y python-software-properties
- curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
-#Running apt-get to Install Node.js
- sudo apt-get install -y nodejs
- sudo apt-get install build-essential -y
- sudo apt-get update
-#Finally, Update Your Version of npm
- sudo apt-get install build-essential libssl-dev
- sudo npm install npm --global -y
+#sudo apt-get remove nodejs
+#sudo apt-get remove npm
+#sudo rm -rf /usr/local/bin/npm /usr/local/share/man/man1/node* /usr/local/lib/dtrace/node.d ~/.npm ~/.node-gyp /opt/local/bin/node opt/local/include/node /opt/local/lib/node_modules 
+#sudo rm -rf /usr/local/lib/node*
+#sudo rm -rf /usr/local/include/node*
+#sudo rm -rf /usr/local/bin/node*
+cd /home/
+sudo apt-get install -y build-essential curl git m4 ruby texinfo libbz2-dev libcurl4-openssl-dev libexpat-dev libncurses-dev zlib1g-dev
+sudo curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+sudo apt-get install -y nodejs
+sudo apt-get install -y build-essential
+sudo wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.0/install.sh | bash
+
+export NVM_DIR="/root/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
  
-#Install Nginx
- sudo systemctl enable nginx -y
- sudo systemctl start nginx 
-#Set Up Nginx as a Reverse Proxy Server
-cat > /etc/nginx/sites-available/default << EOF
-server {
-    listen 80;
-		server_name pitvietnam.com;
-        access_log /var/log/nginx/pitvietnam.log; 
-    location / {
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-NginX-Proxy true;
-    proxy_pass http://localhost:8080;
-    proxy_set_header Host $http_host;
-    proxy_cache_bypass $http_upgrade;
-    proxy_redirect off;
-}
-EOF
-chmod ug+rwx /etc/nginx/sites-available/default
-#Replace the contents of that block with the following configuration:
-#Make sure you didn't introduce any syntax errors by typing:
- sudo nginx -t
- sudo systemctl restart nginx
-#or reload Nginx: sudo /etc/init.d/nginx reload
-#Adjust the Firewall
- sudo ufw app list
- sudo ufw allow 'Nginx HTTP'
- sudo ufw status
-#Check status of Nginx and start it using the following commands
-# sudo systemctl status nginx    # To check the status of nginx
-#enable nginx service to start up at boot 
- sudo systemctl enable nginx
-#However, in order to keep the npm start - localhost with port 3000 or 8080 server always alive, use pm2:
- sudo npm install pm2 -g
-#Then, change directory (cd) to webapp folder: (assume that using npm start for starting nodejs app)
- pm2 start npm -- start
-#start pm2 when reboot 
- pm2 startup systemd 
-#Run this command to run your application as a service by typing the following:
- sudo env PATH=$PATH:/usr/local/bin pm2 startup -u root
- pm2 save
-#Useful pm2 commands:
-#pm2 list all
-#pm2 stop all
-#pm2 start all
-#pm2 delete 0
-#(use delete 0 to delete the first command from pm2 list with ID 0) 
-#(if using kind of npm run:start to start app, then it should be: pm2 start npm -- run:start)
-#After that, this command will be remembered by pm2! 
-#redirect all visitors to HTTPS/SSL in Cloudflare
-#Using page rules
-#For example:
-# http://example.com/*
- #redirected with a 301 response code to
-# https://www.example.com/$1
-
-
-logMessage "(5/6) Install a StorJ miner"
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#How to install a StorJ miner on Ubuntu via Command Line
-#----------------------------------------------------------------------------------------------------------------------------------------
- cd /home/
- sudo apt-get install -y build-essential curl git m4 ruby texinfo libbz2-dev libcurl4-openssl-dev libexpat-dev libncurses-dev zlib1g-dev
- sudo apt-get install -y build-essential
- sudo wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.0/install.sh | bash
-
- export NVM_DIR="/root/.nvm"
- [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
- 
- nvm install --lts
- sudo apt-get update -y
- sudo apt-get dist-upgrade -y
- sudo apt-get install git python build-essential -y
- sudo npm install --global storjshare-daemon
-
+nvm install --lts
+sudo apt-get update -y
+sudo apt-get dist-upgrade -y
+sudo apt-get install git python build-essential -y
+sudo npm install --global storjshare-daemon
+# sudo npm install --global storjshare-daemon
+# sudo npm install -g npm-install-missing
+# sudo npm install -g storjshare-daemon --unsafe-perm
+#sudo npm install -g storjshare-daemon
 #Start the StorJ daemon service with this command:
- sudo storjshare daemon
+sudo storjshare daemon
 
 #Check which drives want to configure StorJ storage to sit on. Run this command:
 # df -h
 #Find out GB free on /. Let’s create storj folders on those drives for StorJ:
- sudo mkdir /storj
+sudo mkdir /storj
 #Configure a StorJ share location with a command like this:
 #After running the storjshare-create command, it brings up an editor that lets you review and change any configuration details you need to. 
 #Just type this command to save and close the editor:
@@ -903,11 +815,86 @@ sed -i '$ a 0 * * * * export DISPLAY=:1 && root /root/.config/storjshare/storjda
 sudo service cron restart
  
 #Done!
+
+logMessage "(5/6) Set Up a Node.js Application for Production"
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#How to install a StorJ miner on Ubuntu via Command Line
+#----------------------------------------------------------------------------------------------------------------------------------------
+#Download and setup the APT repository add the PGP key to the system’s APT keychain,
+ cd /home/
+ sudo apt-get install -y python-software-properties
+ curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+#Running apt-get to Install Node.js
+ sudo apt-get install -y nodejs
+ sudo apt-get install build-essential -y
+ sudo apt-get update -y
+#Finally, Update Your Version of npm
+ sudo apt-get install build-essential libssl-dev -y
+ sudo npm install npm --global -y
+ 
+#Install Nginx
+ sudo systemctl enable nginx
+ sudo systemctl start nginx 
+#Set Up Nginx as a Reverse Proxy Server
+cat > /etc/nginx/sites-available/default << EOF
+server {
+    listen 80;
+        server_name pitvietnam.com;
+        access_log /var/log/nginx/pitvietnam.log; 
+    location / {
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-NginX-Proxy true;
+    proxy_pass http://localhost:8080;
+    proxy_set_header Host $http_host;
+    proxy_cache_bypass $http_upgrade;
+    proxy_redirect off;
+}
+EOF
+chmod ug+rwx /etc/nginx/sites-available/default
+#Replace the contents of that block with the following configuration:
+#Make sure you didn't introduce any syntax errors by typing:
+ sudo nginx -t
+ sudo systemctl restart nginx
+#or reload Nginx: sudo /etc/init.d/nginx reload
+#Adjust the Firewall
+ sudo ufw app list
+ sudo ufw allow 'Nginx HTTP'
+ sudo ufw status
+#Check status of Nginx and start it using the following commands
+# sudo systemctl status nginx    # To check the status of nginx
+#enable nginx service to start up at boot 
+ sudo systemctl enable nginx
+#However, in order to keep the npm start - localhost with port 3000 or 8080 server always alive, use pm2:
+ sudo npm install pm2 -g
+#Then, change directory (cd) to webapp folder: (assume that using npm start for starting nodejs app)
+ pm2 start npm -- start
+#start pm2 when reboot 
+ pm2 startup systemd 
+#Run this command to run your application as a service by typing the following:
+ sudo env PATH=$PATH:/usr/local/bin pm2 startup -u root
+ pm2 save
+#Useful pm2 commands:
+#pm2 list all
+#pm2 stop all
+#pm2 start all
+#pm2 delete 0
+#(use delete 0 to delete the first command from pm2 list with ID 0) 
+#(if using kind of npm run:start to start app, then it should be: pm2 start npm -- run:start)
+#After that, this command will be remembered by pm2! 
+#redirect all visitors to HTTPS/SSL in Cloudflare
+#Using page rules
+#For example:
+# http://example.com/*
+ #redirected with a 301 response code to
+# https://www.example.com/$1
+
+
 logMessage "(6/6) Add DRAGONBALL aliases"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo "" >> ~/.bashrc
 echo "# DRAGONBALL ALIASES" >> ~/.bashrc
-echo "alias res='cd ~/Desktop/'" >> ~/.bashrc
+echo "alias res='cd /root/Desktop/'" >> ~/.bashrc
 echo "alias proxy='cd /home/proxy'" >> ~/.bashrc
 echo "alias gl='pm2 l'" >> ~/.bashrc
 echo "alias glog='pm2 logs'" >> ~/.bashrc
