@@ -712,7 +712,7 @@ logMessage "(4/6) Install a StorJ miner"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #How to install a StorJ miner on Ubuntu via Command Line
 #----------------------------------------------------------------------------------------------------------------------------------------
-#sudo apt-get remove nodejs
+#sudo apt-get remove nodejs -y
 #sudo apt-get remove npm
 #sudo rm -rf /usr/local/bin/npm /usr/local/share/man/man1/node* /usr/local/lib/dtrace/node.d ~/.npm ~/.node-gyp /opt/local/bin/node opt/local/include/node /opt/local/lib/node_modules 
 #sudo rm -rf /usr/local/lib/node*
@@ -730,9 +730,12 @@ export NVM_DIR="/root/.nvm"
  
 nvm install --lts
 sudo apt-get update -y
+sudo node-gyp rebuild -y
 sudo apt-get dist-upgrade -y
 sudo apt-get install git python build-essential -y
 sudo npm install --global storjshare-daemon
+
+#sudo npm install storjshare-daemon --global --no-optional
 # sudo npm install --global storjshare-daemon
 # sudo npm install -g npm-install-missing
 # sudo npm install -g storjshare-daemon --unsafe-perm
@@ -749,7 +752,7 @@ sudo mkdir /storj
 #Just type this command to save and close the editor:
 # :wq
 
-echo '#!/usr/bin/expect -f -f
+echo '#!/usr/bin/expect -f
 spawn sudo storjshare-create --storj 0xAF99AaBBD2fF63C3cb6855E5BE87F243b7f88D09 --storage /storj --size 5GB
 send ":wq\r"
 expect off' > configStorj.sh
@@ -803,7 +806,7 @@ sed -i s'/server 3.ubuntu.pool.ntp.org/server 3.it.pool.ntp.org/g' nano /etc/ntp
  
 #Have the Storjshare daemon run when reboot:
 echo '#!/bin/bash
- sudo storjshare daemon && sudo storjshare start --config /root/.config/storjshare/configs/$StorjConfigFile > /dev/null 2>&1
+ sudo storjshare daemon && sudo storjshare start --config $StorjConfigFile > /dev/null 2>&1
  ' >> /root/.config/storjshare/storjdaemon
  
 chmod uga+x /root/.config/storjshare/storjdaemon
