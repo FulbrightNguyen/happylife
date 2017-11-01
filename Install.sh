@@ -5,7 +5,7 @@ export PATH
 clear
 echo ""
 echo " ============================================================"
-echo "                       DRAGONBALL 0.0.2 "
+echo "                       DRAGONBALL 0.0.2"
 echo ""
 echo "                  This will take a few seconds"
 echo ""
@@ -82,14 +82,14 @@ echo 'honeycomb01 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 USER1='honeycomb02'
 #sudo adduser honeycomb01
 sudo useradd -m -c "honeycomb02" honeycomb02 -s /bin/bash -d /home/honeycomb02
-sudo usermod -aG sudo honeycomb01
+sudo usermod -aG sudo honeycomb02
 echo 'honeycomb02 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 #Add another users
 USER1='honeycomb03'
 #sudo adduser honeycomb01
 sudo useradd -m -c "honeycomb03" honeycomb03 -s /bin/bash -d /home/honeycomb03
-sudo usermod -aG sudo honeycomb01
+sudo usermod -aG sudo honeycomb03
 echo 'honeycomb03 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 #USER1
@@ -128,7 +128,7 @@ expect eof' > /home/$USER1/setVncPasswd.sh
 
 su - $USER1 -c "sudo chown -R $USER1 /home/$USER1/setVncPasswd.sh && sudo chmod 777 /home/$USER1/setVncPasswd.sh"
 su - $USER1 -c "sudo /home/$USER1/./setVncPasswd.sh"
-su - $USER1 -c "sudo rm -rf /home/$USER2/setVncPasswd.sh"
+su - $USER1 -c "sudo rm -rf /home/$USER1/setVncPasswd.sh"
 su - $USER1 -c "sudo vncserver -kill :2"
 su - $USER1 -c "sudo mv /home/$USER1/.vnc/xstartup /home/$USER1/.vnc/xstartup.backup"
 #nano ~/.vnc/xstartup
@@ -158,7 +158,7 @@ if {$force_conservative} {
 set timeout -1
 spawn vncpasswd
 match_max 100000
-expect -exact "Using password file /honeycomb01/.vnc/passwd\r
+expect -exact "Using password file /honeycomb02/.vnc/passwd\r
 Password: "
 send -- "Win@123\r"
 expect -exact "\r
@@ -275,6 +275,7 @@ service vncserver start
 
 
 #Go to Desktop
+sudo su -
 cd /home/
 #Download toolkit from github
 #git init
@@ -357,12 +358,12 @@ cp -rf /home/mmo/crossover_13.1.3-1/crack/winewrapper.exe.so /opt/cxoffice/lib/w
 # https://plus.google.com/
 # https://www.facebook.com/
 #Task management
- apt install htop
+apt install htop
 #Generate a report of the network usage 
- apt-get install vnstat
+apt-get install vnstat
 #To monitor the bandwidth usage in realtime, use: vnstat -l -i eth0   
 #Disable vps from going to sleep 
- sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 #Disable screen off or screensaver by caffeine-indicator
 # sudo add-apt-repository ppa:caffeine-developers/ppa
 # sudo apt-get update
