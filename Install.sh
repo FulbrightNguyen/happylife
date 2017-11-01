@@ -79,14 +79,14 @@ sudo usermod -aG sudo honeycomb01
 echo 'honeycomb01 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 #Add another users
-USER1='honeycomb02'
+USER2='honeycomb02'
 #sudo adduser honeycomb01
 sudo useradd -m -c "honeycomb02" honeycomb02 -s /bin/bash -d /home/honeycomb02
 sudo usermod -aG sudo honeycomb02
 echo 'honeycomb02 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 #Add another users
-USER1='honeycomb03'
+USER3='honeycomb03'
 #sudo adduser honeycomb01
 sudo useradd -m -c "honeycomb03" honeycomb03 -s /bin/bash -d /home/honeycomb03
 sudo usermod -aG sudo honeycomb03
@@ -393,6 +393,10 @@ done
 ' >> /root/autorestartCrashedApp
 chmod +x /root/autorestartCrashedApp
 #crontab -e
+#User has to belong to the "crontab" group
+sudo usermod -aG crontab honeycomb01
+sudo usermod -aG crontab honeycomb02
+sudo usermod -aG crontab honeycomb03
 
 echo '0 * * * * export DISPLAY=:1 && root /root/autorestartCrashedApp' >> /etc/crontab
 
