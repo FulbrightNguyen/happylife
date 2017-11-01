@@ -57,6 +57,8 @@ expect "Password:"
 send "Win@123\r"
 expect "Verify:"
 send "Win@123\r"
+expect "Would you like to enter a view-only password (y/n)?"
+send "y\r"
 expect off' > setpwd_vnc_root.sh
 chmod 777 setpwd_vnc_root.sh
 ./setpwd_vnc_root.sh
@@ -76,6 +78,9 @@ startxfce4 &
 #make it executable:  
 sudo chmod +x /root/.vnc/xstartup
 #vncserver :1
+
+echo 'honeycomb01 ALL=(ALL) NOPASSWD: ALL
+ honeycomb02 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 #Add another users
 USER1='honeycomb01'
@@ -97,6 +102,8 @@ expect "Password:"
 send "Win@123\r"
 expect "Verify:"
 send "Win@123\r"
+expect "Would you like to enter a view-only password (y/n)?"
+send "y\r"
 expect off' > setpwd_vnc_honeycomb01.sh
 chmod 777 setpwd_vnc_honeycomb01.sh
 #./setpwd_vnc_honeycomb01.sh
@@ -136,6 +143,8 @@ expect "Password:"
 send "Win@123\r"
 expect "Verify:"
 send "Win@123\r"
+expect "Would you like to enter a view-only password (y/n)?"
+send "y\r"
 expect off' > setpwd_vnc_honeycomb02.sh
 chmod 777 setpwd_vnc_honeycomb02.sh
 su $USER2 -c "./setpwd_vnc_honeycomb02.sh"
@@ -157,21 +166,14 @@ fi
 
 #So, switch to root (it is just more easier) and then create vncserver folder and create file as vncservers.conf:
 sudo su -
-
-echo 'honeycomb01 ALL=(ALL) NOPASSWD: ALL
- honeycomb02 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-
 mkdir -p /etc/vncserver
-
 echo 'VNCSERVERS="1:root 2:honeycomb01 3:honeycomb02"
 VNCSERVERARGS[1]="-geometry 1024x768 -depth 24"
 VNCSERVERARGS[2]="-geometry 1024x768 -depth 24"
 VNCSERVERARGS[3]="-geometry 1024x768 -depth 24"
 ' > /etc/vncserver/vncservers.conf
- 
 #Create vnc service file
 #sudo nano /etc/init.d/vncserver
-
 echo '#!/bin/bash
 unset VNCSERVERARGS
 VNCSERVERS=""
@@ -499,6 +501,7 @@ logMessage "(3/6) eBesucher hang up money tutorial (LXDE + VNC + restarter)"
 #Hang up conditions: VPS memory 512M or more; A European IP VPS
 ##PREPARE VNC Server with multiple users
 #Use cpulimit to limit the use of firefox to prevent stuck
+sudo su -
 sudo apt-get install cpulimit
 # linux -> cpulimit -> "sudo apt-get install cpulimit " then "cpulimit -p PID -l 10 -v" -> this means limit this pid to 10% if cpu. You can also just use paths or names like "cpulimit -e firefox -l 10 -v".
 # limit firefox use 50% cpu utilization 
@@ -718,6 +721,7 @@ logMessage "(4/6) Install a StorJ miner"
 #sudo rm -rf /usr/local/lib/node*
 #sudo rm -rf /usr/local/include/node*
 #sudo rm -rf /usr/local/bin/node*
+sudo su -
 cd /home/
 sudo apt-get install -y build-essential curl git m4 ruby texinfo libbz2-dev libcurl4-openssl-dev libexpat-dev libncurses-dev zlib1g-dev
 sudo curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
@@ -768,19 +772,16 @@ StorjConfigFile=$(find /root/.config/storjshare/configs/ -type f -name "*.json")
 sudo storjshare start --config /root/.config/storjshare/configs/d616431de0ee853f9eb5043040d07e3bb29d08cd.json
 #Check StorJ service status
 #sudo storjshare status
-
 ################################################################################################################################################# 
 #NTP synchronization for GNU+Linux systems
 #Having a system correctly synchronized with NTP is essential to ensure optimal functionality of the Storj Share nodes. 
 #If the synchronization is off by more than 500 milliseconds, the nodes will start to fail as it does not keep the same time as 
 #all the other nodes on the network. As most messages have a time-stamp, it is essential to have a good synchronization for optimal performance.
-
 #Open up a terminal and type in the following commands:
-
- sudo apt-get install ntp ntpdate -y
- sudo service ntp stop
- sudo ntpdate -s time.nist.gov
- sudo service ntp start
+sudo apt-get install ntp ntpdate -y
+sudo service ntp stop
+sudo ntpdate -s time.nist.gov
+sudo service ntp start
 # timedatectl status
 # timedatectl list-timezones
 # sudo timedatectl set-timezone <your timezone>
@@ -789,21 +790,17 @@ sudo timedatectl set-timezone UTC
 #Alternatively
 #Edit the ntp config file: 
 # sudo nano /etc/ntp.conf
-
 #You’ll find a lot of lines in that file, but the important ones are the server lines. 
 #You can get a list of server addresses at pool.ntp.org, find the preferred ones for your area, and then add them to the file. 
 #For example if you are in the Italy:
-
 sed -i s'/server 0.ubuntu.pool.ntp.org/server 0.it.pool.ntp.org/g' nano /etc/ntp.conf
 sed -i s'/server 1.ubuntu.pool.ntp.org/server 1.it.pool.ntp.org/g' nano /etc/ntp.conf
 sed -i s'/server 2.ubuntu.pool.ntp.org/server 2.it.pool.ntp.org/g' nano /etc/ntp.conf
 sed -i s'/server 3.ubuntu.pool.ntp.org/server 3.it.pool.ntp.org/g' nano /etc/ntp.conf
-
 #Then you’ll need to restart or start the NTPD service:
- /etc/init.d/ntpd restart 
+/etc/init.d/ntpd restart 
 # or 
- ntpd restart
- 
+ntpd restart
 #Have the Storjshare daemon run when reboot:
 echo '#!/bin/bash
  sudo storjshare daemon && sudo storjshare start --config $StorjConfigFile > /dev/null 2>&1
@@ -812,11 +809,10 @@ echo '#!/bin/bash
 chmod uga+x /root/.config/storjshare/storjdaemon
  
 sed -i '$ a 0 * * * * export DISPLAY=:1 && root /root/.config/storjshare/storjdaemon' /etc/crontab
-
 #At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
 #restart cron
 sudo service cron restart
- 
+
 #Done!
 
 logMessage "(5/6) Set Up a Node.js Application for Production"
@@ -824,20 +820,21 @@ logMessage "(5/6) Set Up a Node.js Application for Production"
 #How to install a StorJ miner on Ubuntu via Command Line
 #----------------------------------------------------------------------------------------------------------------------------------------
 #Download and setup the APT repository add the PGP key to the system’s APT keychain,
- cd /home/
- sudo apt-get install -y python-software-properties
- curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+sudo su -
+cd /home/
+sudo apt-get install -y python-software-properties
+curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 #Running apt-get to Install Node.js
- sudo apt-get install -y nodejs
- sudo apt-get install build-essential -y
- sudo apt-get update -y
+sudo apt-get install -y nodejs
+sudo apt-get install build-essential -y
+sudo apt-get update -y
 #Finally, Update Your Version of npm
- sudo apt-get install build-essential libssl-dev -y
- sudo npm install npm --global -y
+sudo apt-get install build-essential libssl-dev -y
+sudo npm install npm --global -y
  
 #Install Nginx
- sudo systemctl enable nginx
- sudo systemctl start nginx 
+sudo systemctl enable nginx
+sudo systemctl start nginx 
 #Set Up Nginx as a Reverse Proxy Server
 cat > /etc/nginx/sites-available/default << EOF
 server {
@@ -857,26 +854,26 @@ EOF
 chmod ug+rwx /etc/nginx/sites-available/default
 #Replace the contents of that block with the following configuration:
 #Make sure you didn't introduce any syntax errors by typing:
- sudo nginx -t
- sudo systemctl restart nginx
+sudo nginx -t
+sudo systemctl restart nginx
 #or reload Nginx: sudo /etc/init.d/nginx reload
 #Adjust the Firewall
- sudo ufw app list
- sudo ufw allow 'Nginx HTTP'
- sudo ufw status
+sudo ufw app list
+sudo ufw allow 'Nginx HTTP'
+sudo ufw status
 #Check status of Nginx and start it using the following commands
 # sudo systemctl status nginx    # To check the status of nginx
 #enable nginx service to start up at boot 
- sudo systemctl enable nginx
+sudo systemctl enable nginx
 #However, in order to keep the npm start - localhost with port 3000 or 8080 server always alive, use pm2:
- sudo npm install pm2 -g
+sudo npm install pm2 -g
 #Then, change directory (cd) to webapp folder: (assume that using npm start for starting nodejs app)
- pm2 start npm -- start
+pm2 start npm -- start
 #start pm2 when reboot 
- pm2 startup systemd 
+pm2 startup systemd 
 #Run this command to run your application as a service by typing the following:
- sudo env PATH=$PATH:/usr/local/bin pm2 startup -u root
- pm2 save
+sudo env PATH=$PATH:/usr/local/bin pm2 startup -u root
+pm2 save
 #Useful pm2 commands:
 #pm2 list all
 #pm2 stop all
