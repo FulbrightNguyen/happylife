@@ -1,43 +1,30 @@
 #!/bin/bash
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
-
 #curl -qsL https://raw.githubusercontent.com/FulbrightNguyen/happylife/master/Install.sh | bash -- && exec bash
-
 clear
-echo
-echo "#############################################################"
-echo "# DRAGONBALL One click Install VPS server                   #"
-echo "# Intro: 								                      #"
-echo "# Author: 							                      #"
-echo "# Github:   											      #"
-echo "#############################################################"
-echo
-
 # Set variables
 # -----------------------------------
 
 # Set functions
 # -----------------------------------
-logMessage () {
+echo () {
   echo " $1"
-  echo " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  echo " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 }
-
-
 echo ""
 echo " ============================================================"
-echo "               DRAGONBALL 0.0.2 SETUP VPS started"
+echo "                       DRAGONBALL 0.0.2 "
 echo ""
-echo "                This will take a few seconds"
+echo "                  This will take a few seconds"
 echo ""
 echo "                DEBUG VERSION WITH A LOT OF OUTPUT"
 echo ""
 echo " ============================================================"
 echo ""
 
-logMessage "(1) Update the base system & Install traffic exchange apps..."
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+echo "(1/6) Update the base system & Install traffic exchange apps..."
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Install some traffic exchange script on VPS ubuntu 16.04.
 #- hitleap.com
 #- kilohits.com
@@ -374,11 +361,11 @@ chmod +x /root/autorestartCrashedApp
 
 echo '0 * * * * export DISPLAY=:1 && root /root/autorestartCrashedApp' >> /etc/crontab
 
-#reboot
 #Done!
 
-logMessage "(2/6) Run unlimited hitleap and kilohits viewer"
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+echo "(2/6) Run unlimited hitleap and kilohits viewer"
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #PREPARE VNC Server with multiple users 
 #We must seperate all linux users' TMP directories. That is the problem why traffic exchange viewers don't run multiple.
 #STEP 1 : Seperating tmp directories for each user
@@ -496,8 +483,10 @@ chmod ugo+x /home/honeycomb02/autostarthoneycomb02
 #echo '0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autostarthoneycomb02' >> /etc/crontab
 sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autostarthoneycomb02' /etc/crontab
 
-logMessage "(3/6) eBesucher hang up money tutorial (LXDE + VNC + restarter)"
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+echo "(3/6) eBesucher hang up money tutorial (LXDE + VNC + restarter)"
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Hang up conditions: VPS memory 512M or more; A European IP VPS
 ##PREPARE VNC Server with multiple users
 #Use cpulimit to limit the use of firefox to prevent stuck
@@ -711,8 +700,8 @@ sudo service cron restart
 #		sleep 300
 #done' > autorestartFirefox.sh 
 
-logMessage "(4/6) Install a StorJ miner"
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+echo "(4/6) Install a StorJ miner"
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #How to install a StorJ miner on Ubuntu via Command Line
 #----------------------------------------------------------------------------------------------------------------------------------------
 #sudo apt-get remove nodejs -y
@@ -815,8 +804,8 @@ sudo service cron restart
 
 #Done!
 
-logMessage "(5/6) Set Up a Node.js Application for Production"
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+echo "(5/6) Set Up a Node.js Application for Production"
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #How to install a StorJ miner on Ubuntu via Command Line
 #----------------------------------------------------------------------------------------------------------------------------------------
 #Download and setup the APT repository add the PGP key to the system’s APT keychain,
@@ -890,8 +879,8 @@ pm2 save
 # https://www.example.com/$1
 
 
-logMessage "(6/6) Add DRAGONBALL aliases"
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+echo "(6/6) Add DRAGONBALL aliases"
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo "" >> ~/.bashrc
 echo "# DRAGONBALL ALIASES" >> ~/.bashrc
 echo "alias res='cd /root/Desktop/'" >> ~/.bashrc
@@ -906,7 +895,7 @@ echo ""
 echo " ============================================================"
 echo "                   DRAGONBALL SETUP complete!"
 echo ""
-echo "          Please run this command to init :"
+echo "                Please run this command to init:"
 echo "                           res"
 echo "                           proxy"
 echo ""
