@@ -30,11 +30,13 @@ sudo apt update && sudo apt upgrade -y && sudo apt install gnome-core xfce4 xfce
 #then add users
 #vncserver
 echo '#!/usr/bin/expect -f
-spawn sudo vncserver
+set timeout 10
+set pw Win@123
+spawn vncserver
 expect "Password:"
-send "Win@123\r"
+send "$pw\r"
 expect "Verify:"
-send "Win@123\r"
+send "$pw\r"
 expect "Would you like to enter a view-only password (y/n)?"
 send "y\r"
 expect off' > setpwd_vnc_root.sh
@@ -48,7 +50,7 @@ mv /root/.vnc/xstartup /root/.vnc/xstartup.backup
 
 #nano /root/.vnc/xstartup
 echo '#!/bin/bash
-[ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
+[ -r ~/.Xresources ] && xrdb ~/.Xresources
 autocutsel -fork
 startxfce4 &
 ' > /root/.vnc/xstartup
@@ -57,90 +59,135 @@ startxfce4 &
 sudo chmod +x /root/.vnc/xstartup
 #vncserver :1
 
-echo 'honeycomb01 ALL=(ALL) NOPASSWD: ALL
- honeycomb02 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-
 #Add another users
 USER1='honeycomb01'
-sudo adduser honeycomb01
+#sudo adduser honeycomb01
+
+echo '#!/usr/bin/expect -f
+set timeout 10
+set pw Win@123
+spawn adduser honeycomb01
+expect "Password:"
+send "$pw\r"
+expect "Verify:"
+send "$pw\r"
+expect "Full Name*"
+send "honeycomb01\r"
+expect "Room Number*"
+send "1\r"
+expect "Work Phone*"
+send "1\r"
+expect "Home Phone*"
+send "1\r"
+expect "Other*"
+send "1\r"
+expect "Is the information correct? [Y/n]*"
+send "Y\r"
+expect off' > setpwd_user1.sh
+chmod 777 setpwd_user1.sh
+./setpwd_user1.sh
+#hard return (\r )
+rm -rf setpwd_user1.sh
+
 sudo usermod -aG sudo honeycomb01
 
-if [ $(whoami) != "$USER1" ]; then
+echo 'honeycomb01 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+#Add another users
+USER2='honeycomb02'
+#sudo adduser honeycomb01
+
+echo '#!/usr/bin/expect -f
+set timeout 10
+set pw Win@123
+spawn adduser honeycomb02
+expect "Password:"
+send "$pw\r"
+expect "Verify:"
+send "$pw\r"
+expect "Full Name*"
+send "honeycomb01\r"
+expect "Room Number*"
+send "1\r"
+expect "Work Phone*"
+send "1\r"
+expect "Home Phone*"
+send "1\r"
+expect "Other*"
+send "1\r"
+expect "Is the information correct? [Y/n]*"
+send "Y\r"
+expect off' > setpwd_user2.sh
+chmod 777 setpwd_user2.sh
+./setpwd_user2.sh
+#hard return (\r )
+rm -rf setpwd_user2.sh
+
+sudo usermod -aG sudo honeycomb02
+
+echo 'honeycomb02 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+#USER1
 #Run command in other user by using
 #su user -c "command"
 #or
 #sudo -u user "command"
-su $USER1 -c "cd /home/"
+su - $USER1 -c "cd /home/"
 #install necessary stuff for desktop
-su $USER1 -c "apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
+su - $USER1 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
+#setVncPasswd.sh
+#$ ./setVncPasswd <myuser> <mypasswd>
+echo '#!/bin/sh    
+myuser="$1"
+mypasswd="$2"
 
-echo '#!/usr/bin/expect -f
-spawn sudo vncserver :2
-expect "Password:"
-send "Win@123\r"
-expect "Verify:"
-send "Win@123\r"
-expect "Would you like to enter a view-only password (y/n)?"
-send "y\r"
-expect off' > setpwd_vnc_honeycomb01.sh
-chmod 777 setpwd_vnc_honeycomb01.sh
-#./setpwd_vnc_honeycomb01.sh
-su $USER1 -c "./setpwd_vnc_honeycomb01.sh"
-su $USER1 -c "rm -rf setpwd_vnc_honeycomb01.sh"
+mkdir /home/$myuser/.vnc
+echo $mypasswd | vncpasswd -f > /home/$myuser/.vnc/passwd
+chown -R $myuser /home/$myuser/.vnc
+chmod 0600 /home/$myuser/.vnc/passwd' > /home/$USER1/setVncPasswd.sh
 
-su $USER1 -c "mv /home/$USER1/.vnc/xstartup /home/$USER1/.vnc/xstartup.backup"
+su - $USER1 -c "sudo chown -R $USER1 /home/$USER1/setVncPasswd.sh && sudo chmod 777 /home/$USER1/setVncPasswd.sh"
+su - $USER1 -c "sudo /home/$USER1/./setVncPasswd.sh honeycomb01 Win@123"
+su - $USER2 -c "sudo rm -rf /home/$USER2/setVncPasswd.sh"
+su - $USER1 -c "sudo vncserver -kill :2"
+su - $USER1 -c "sudo mv /home/$USER1/.vnc/xstartup /home/$USER1/.vnc/xstartup.backup"
 #nano ~/.vnc/xstartup
 echo '#!/bin/bash
-[ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
+[ -r ~/.Xresources ] && xrdb ~/.Xresources
 autocutsel -fork
 startxfce4 &
 ' > /home/$USER1/.vnc/xstartup
 #make it executable:  
-su $USER1 -c "chmod +x /home/$USER1/.vnc/xstartup"
-su $USER1 -c "vncserver -kill :2"
-su $USER1 -c "exit"
+su - $USER1 -c "sudo chown -R $USER1 /home/$USER1/.vnc/xstartup && sudo chmod 777 /home/$USER1/.vnc/xstartup"
 
-fi
-
-#Add another users
-USER2='honeycomb02'
-sudo adduser honeycomb02
-sudo usermod -aG sudo honeycomb02
-if [ $(whoami) != "$USER2" ]; then
-#Run command in other user by using
-#su user -c "command"
-#or
-#sudo -u user "command"
-su $USER2 -c "cd /home/"
+#USER2
+su - $USER2 -c "cd /home/"
 #install necessary stuff for desktop
-su $USER2 -c "apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
+su - $USER2 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
+#setVncPasswd.sh
+#$ ./setVncPasswd <myuser> <mypasswd>
+echo '#!/bin/sh    
+myuser="$1"
+mypasswd="$2"
 
-echo '#!/usr/bin/expect -f
-spawn sudo vncserver :3
-expect "Password:"
-send "Win@123\r"
-expect "Verify:"
-send "Win@123\r"
-expect "Would you like to enter a view-only password (y/n)?"
-send "y\r"
-expect off' > setpwd_vnc_honeycomb02.sh
-chmod 777 setpwd_vnc_honeycomb02.sh
-su $USER2 -c "./setpwd_vnc_honeycomb02.sh"
-su $USER2 -c "rm -rf setpwd_vnc_honeycomb02.sh"
+mkdir /home/$myuser/.vnc
+echo $mypasswd | vncpasswd -f > /home/$myuser/.vnc/passwd
+chown -R $myuser /home/$myuser/.vnc
+chmod 0600 /home/$myuser/.vnc/passwd' > /home/$USER2/setVncPasswd.sh
 
-su $USER2 -c "mv /home/$USER2/.vnc/xstartup /home/$USER2/.vnc/xstartup.backup"
+su - $USER2 -c "sudo chown -R $USER2 /home/$USER2/setVncPasswd.sh && sudo chmod 777 /home/$USER2/setVncPasswd.sh"
+su - $USER2 -c "sudo /home/$USER2/./setVncPasswd.sh honeycomb02 Win@123"
+su - $USER2 -c "sudo rm -rf /home/$USER2/setVncPasswd.sh"
+su - $USER2 -c "sudo vncserver -kill :3"
+su - $USER2 -c "sudo mv /home/$USER2/.vnc/xstartup /home/$USER2/.vnc/xstartup.backup"
 #nano ~/.vnc/xstartup
 echo '#!/bin/bash
-[ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
+[ -r ~/.Xresources ] && xrdb ~/.Xresources
 autocutsel -fork
 startxfce4 &
 ' > /home/$USER2/.vnc/xstartup
 #make it executable:  
-su $USER2 -c "chmod +x /home/$USER2/.vnc/xstartup"
-su $USER2 -c "vncserver -kill :3"
-su $USER2 -c "exit"
-
-fi
+su - $USER2 -c "sudo chown -R $USER2 /home/$USER2/.vnc/xstartup && sudo chmod 777 /home/$USER2/.vnc/xstartup"
 
 #So, switch to root (it is just more easier) and then create vncserver folder and create file as vncservers.conf:
 sudo su -
@@ -150,6 +197,8 @@ VNCSERVERARGS[1]="-geometry 1024x768 -depth 24"
 VNCSERVERARGS[2]="-geometry 1024x768 -depth 24"
 VNCSERVERARGS[3]="-geometry 1024x768 -depth 24"
 ' > /etc/vncserver/vncservers.conf
+
+chmod +x /etc/vncserver/vncservers.conf
 #Create vnc service file
 #sudo nano /etc/init.d/vncserver
 echo '#!/bin/bash
@@ -218,7 +267,7 @@ status Xvnc
 echo $"Usage: $0 {start|stop|restart|condrestart|status}"
 exit 1
 esac
-' >> /etc/init.d/vncserver
+' > /etc/init.d/vncserver
 
 #Make the script executable, and add it to the startup scripts:
 chmod +x /etc/init.d/vncserver
@@ -229,7 +278,7 @@ systemctl daemon-reload
 service vncserver stop
 service vncserver start
 #/etc/init.d/vncserver start
-#Check that its running
+
 
 #Go to Desktop
 cd /home/
@@ -542,11 +591,11 @@ source /etc/profile
 #The restarter is an on-hook helper provided by ebesucher that automatically restarts the browser 
 #when the browser has an error (surfing the window, stuck, crashing, etc.), which greatly facilitates us to hang up and avoid manual maintenance. 
 #Download restarter
- sudo wget https://www.ebesucher.com/data/restarter-setup-others.v1.2.03.zip
+sudo wget https://www.ebesucher.com/data/restarter-setup-others.v1.2.03.zip
 #sudo apt-get install unzip
- sudo unzip restarter-setup-others.v1.2.03.zip
+sudo unzip restarter-setup-others.v1.2.03.zip
 #Install java and restarter, through the vnc viewer into the desktop, start the terminal interface root terminal enter the following command:
- export DISPLAY=:1 && sudo java -jar restarter.jar
+export DISPLAY=:1 && sudo java -jar restarter.jar
 dbus-uuidgen > /var/lib/dbus/machine-id
 #(5)Set the restarter (optional)
 #Start the restarter after the need to set the restarter
@@ -718,7 +767,6 @@ sudo node-gyp rebuild -y
 sudo apt-get dist-upgrade -y
 sudo apt-get install git python build-essential -y
 sudo npm install --global storjshare-daemon
-
 #sudo npm install storjshare-daemon --global --no-optional
 # sudo npm install --global storjshare-daemon
 # sudo npm install -g npm-install-missing
@@ -726,7 +774,6 @@ sudo npm install --global storjshare-daemon
 #sudo npm install -g storjshare-daemon
 #Start the StorJ daemon service with this command:
 sudo storjshare daemon
-
 #Check which drives want to configure StorJ storage to sit on. Run this command:
 # df -h
 #Find out GB free on /. Let’s create storj folders on those drives for StorJ:
@@ -735,16 +782,13 @@ sudo mkdir /storj
 #After running the storjshare-create command, it brings up an editor that lets you review and change any configuration details you need to. 
 #Just type this command to save and close the editor:
 # :wq
-
 echo '#!/usr/bin/expect -f
 spawn sudo storjshare-create --storj 0xAF99AaBBD2fF63C3cb6855E5BE87F243b7f88D09 --storage /storj --size 5GB
 send ":wq\r"
 expect off' > configStorj.sh
 chmod 777 configStorj.sh
 ./configStorj.sh
-
 rm -rf configStorj.sh
-
 #Make a copy of config file. The storjshare config file will be a path like this: 
 # /root/.config/storjshare/configs/d616431de0ee853f9eb5043040d07e3bb29d08cd.json
 StorjConfigFile=$(find /root/.config/storjshare/configs/ -type f -name "*.json")
@@ -785,9 +829,7 @@ ntpd restart
 echo '#!/bin/bash
  sudo storjshare daemon && sudo storjshare start --config $StorjConfigFile > /dev/null 2>&1
  ' >> /root/.config/storjshare/storjdaemon
- 
 chmod uga+x /root/.config/storjshare/storjdaemon
- 
 sed -i '$ a 0 * * * * export DISPLAY=:1 && root /root/.config/storjshare/storjdaemon' /etc/crontab
 #At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
 #restart cron
@@ -803,15 +845,14 @@ echo "(5/6) Set Up a Node.js Application for Production"
 sudo su -
 cd /home/
 sudo apt-get install -y python-software-properties
-curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+#curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 #Running apt-get to Install Node.js
-sudo apt-get install -y nodejs
-sudo apt-get install build-essential -y
+#sudo apt-get install -y nodejs
+#sudo apt-get install build-essential -y
 sudo apt-get update -y
 #Finally, Update Your Version of npm
 sudo apt-get install build-essential libssl-dev -y
-sudo npm install npm --global -y
- 
+#sudo npm install npm --global -y
 #Install Nginx
 sudo systemctl enable nginx
 sudo systemctl start nginx 
@@ -868,7 +909,6 @@ pm2 save
 # http://example.com/*
  #redirected with a 301 response code to
 # https://www.example.com/$1
-
 echo "(6/6) Add DRAGONBALL aliases"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo "" >> ~/.bashrc
