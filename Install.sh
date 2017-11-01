@@ -30,16 +30,28 @@ sudo apt update && sudo apt upgrade -y && sudo apt install gnome-core xfce4 xfce
 #then add users
 #vncserver
 echo '#!/usr/bin/expect -f
-set timeout 10
-set pw Win@123
-spawn vncserver
-expect "Password:"
-send "$pw\r"
-expect "Verify:"
-send "$pw\r"
-expect "Would you like to enter a view-only password (y/n)?"
-send "y\r"
-expect off' > setpwd_vnc_root.sh
+set force_conservative 0  
+if {$force_conservative} {
+        set send_slow {1 .1}
+        proc send {ignore arg} {
+                sleep .1
+                exp_send -s -- $arg
+        }
+}
+set timeout -1
+spawn vncpasswd
+match_max 100000
+expect -exact "Using password file /root/.vnc/passwd\r
+Password: "
+send -- "Win@123\r"
+expect -exact "\r
+Verify:   "
+send -- "Win@123\r"
+expect -exact "\r
+Would you like to enter a view-only password (y/n)? "
+send -- "n\r"
+expect eof' > setpwd_vnc_root.sh
+
 chmod 777 setpwd_vnc_root.sh
 ./setpwd_vnc_root.sh
 #hard return (\r )
@@ -62,70 +74,23 @@ sudo chmod +x /root/.vnc/xstartup
 #Add another users
 USER1='honeycomb01'
 #sudo adduser honeycomb01
-
-echo '#!/usr/bin/expect -f
-set timeout 10
-set pw Win@123
-spawn adduser honeycomb01
-expect "Password:"
-send "$pw\r"
-expect "Verify:"
-send "$pw\r"
-expect "Full Name*"
-send "honeycomb01\r"
-expect "Room Number*"
-send "1\r"
-expect "Work Phone*"
-send "1\r"
-expect "Home Phone*"
-send "1\r"
-expect "Other*"
-send "1\r"
-expect "Is the information correct? [Y/n]*"
-send "Y\r"
-expect off' > setpwd_user1.sh
-chmod 777 setpwd_user1.sh
-./setpwd_user1.sh
-#hard return (\r )
-rm -rf setpwd_user1.sh
-
+sudo useradd -m -c "honeycomb01" honeycomb01 -s /bin/bash -d /home/honeycomb01
 sudo usermod -aG sudo honeycomb01
-
 echo 'honeycomb01 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 #Add another users
-USER2='honeycomb02'
+USER1='honeycomb02'
 #sudo adduser honeycomb01
-
-echo '#!/usr/bin/expect -f
-set timeout 10
-set pw Win@123
-spawn adduser honeycomb02
-expect "Password:"
-send "$pw\r"
-expect "Verify:"
-send "$pw\r"
-expect "Full Name*"
-send "honeycomb01\r"
-expect "Room Number*"
-send "1\r"
-expect "Work Phone*"
-send "1\r"
-expect "Home Phone*"
-send "1\r"
-expect "Other*"
-send "1\r"
-expect "Is the information correct? [Y/n]*"
-send "Y\r"
-expect off' > setpwd_user2.sh
-chmod 777 setpwd_user2.sh
-./setpwd_user2.sh
-#hard return (\r )
-rm -rf setpwd_user2.sh
-
-sudo usermod -aG sudo honeycomb02
-
+sudo useradd -m -c "honeycomb02" honeycomb02 -s /bin/bash -d /home/honeycomb02
+sudo usermod -aG sudo honeycomb01
 echo 'honeycomb02 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+#Add another users
+USER1='honeycomb03'
+#sudo adduser honeycomb01
+sudo useradd -m -c "honeycomb03" honeycomb03 -s /bin/bash -d /home/honeycomb03
+sudo usermod -aG sudo honeycomb01
+echo 'honeycomb03 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 #USER1
 #Run command in other user by using
@@ -137,18 +102,33 @@ su - $USER1 -c "cd /home/"
 su - $USER1 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
 #setVncPasswd.sh
 #$ ./setVncPasswd <myuser> <mypasswd>
-echo '#!/bin/sh    
-myuser="$1"
-mypasswd="$2"
 
-mkdir /home/$myuser/.vnc
-echo $mypasswd | vncpasswd -f > /home/$myuser/.vnc/passwd
-chown -R $myuser /home/$myuser/.vnc
-chmod 0600 /home/$myuser/.vnc/passwd' > /home/$USER1/setVncPasswd.sh
+echo '#!/usr/bin/expect -f
+set force_conservative 0  
+if {$force_conservative} {
+        set send_slow {1 .1}
+        proc send {ignore arg} {
+                sleep .1
+                exp_send -s -- $arg
+        }
+}
+set timeout -1
+spawn vncpasswd
+match_max 100000
+expect -exact "Using password file /honeycomb01/.vnc/passwd\r
+Password: "
+send -- "Win@123\r"
+expect -exact "\r
+Verify:   "
+send -- "Win@123\r"
+expect -exact "\r
+Would you like to enter a view-only password (y/n)? "
+send -- "n\r"
+expect eof' > /home/$USER1/setVncPasswd.sh
 
 su - $USER1 -c "sudo chown -R $USER1 /home/$USER1/setVncPasswd.sh && sudo chmod 777 /home/$USER1/setVncPasswd.sh"
-su - $USER1 -c "sudo /home/$USER1/./setVncPasswd.sh honeycomb01 Win@123"
-su - $USER2 -c "sudo rm -rf /home/$USER2/setVncPasswd.sh"
+su - $USER1 -c "sudo /home/$USER1/./setVncPasswd.sh"
+su - $USER1 -c "sudo rm -rf /home/$USER2/setVncPasswd.sh"
 su - $USER1 -c "sudo vncserver -kill :2"
 su - $USER1 -c "sudo mv /home/$USER1/.vnc/xstartup /home/$USER1/.vnc/xstartup.backup"
 #nano ~/.vnc/xstartup
@@ -166,17 +146,31 @@ su - $USER2 -c "cd /home/"
 su - $USER2 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
 #setVncPasswd.sh
 #$ ./setVncPasswd <myuser> <mypasswd>
-echo '#!/bin/sh    
-myuser="$1"
-mypasswd="$2"
-
-mkdir /home/$myuser/.vnc
-echo $mypasswd | vncpasswd -f > /home/$myuser/.vnc/passwd
-chown -R $myuser /home/$myuser/.vnc
-chmod 0600 /home/$myuser/.vnc/passwd' > /home/$USER2/setVncPasswd.sh
+echo '#!/usr/bin/expect -f
+set force_conservative 0  
+if {$force_conservative} {
+        set send_slow {1 .1}
+        proc send {ignore arg} {
+                sleep .1
+                exp_send -s -- $arg
+        }
+}
+set timeout -1
+spawn vncpasswd
+match_max 100000
+expect -exact "Using password file /honeycomb01/.vnc/passwd\r
+Password: "
+send -- "Win@123\r"
+expect -exact "\r
+Verify:   "
+send -- "Win@123\r"
+expect -exact "\r
+Would you like to enter a view-only password (y/n)? "
+send -- "n\r"
+expect eof' > /home/$USER2/setVncPasswd.sh
 
 su - $USER2 -c "sudo chown -R $USER2 /home/$USER2/setVncPasswd.sh && sudo chmod 777 /home/$USER2/setVncPasswd.sh"
-su - $USER2 -c "sudo /home/$USER2/./setVncPasswd.sh honeycomb02 Win@123"
+su - $USER2 -c "sudo /home/$USER2/./setVncPasswd.sh"
 su - $USER2 -c "sudo rm -rf /home/$USER2/setVncPasswd.sh"
 su - $USER2 -c "sudo vncserver -kill :3"
 su - $USER2 -c "sudo mv /home/$USER2/.vnc/xstartup /home/$USER2/.vnc/xstartup.backup"
@@ -783,6 +777,7 @@ sudo mkdir /storj
 #Just type this command to save and close the editor:
 # :wq
 echo '#!/usr/bin/expect -f
+set timeout -1
 spawn sudo storjshare-create --storj 0xAF99AaBBD2fF63C3cb6855E5BE87F243b7f88D09 --storage /storj --size 5GB
 send ":wq\r"
 expect off' > configStorj.sh
@@ -791,7 +786,6 @@ chmod 777 configStorj.sh
 rm -rf configStorj.sh
 #Make a copy of config file. The storjshare config file will be a path like this: 
 # /root/.config/storjshare/configs/d616431de0ee853f9eb5043040d07e3bb29d08cd.json
-StorjConfigFile=$(find /root/.config/storjshare/configs/ -type f -name "*.json")
 #Lets add this configured StorJ path to the StorJshare daemon service with this command:
 sudo storjshare start --config /root/.config/storjshare/configs/d616431de0ee853f9eb5043040d07e3bb29d08cd.json
 #Check StorJ service status
@@ -817,18 +811,19 @@ sudo timedatectl set-timezone UTC
 #You’ll find a lot of lines in that file, but the important ones are the server lines. 
 #You can get a list of server addresses at pool.ntp.org, find the preferred ones for your area, and then add them to the file. 
 #For example if you are in the Italy:
-sed -i s'/server 0.ubuntu.pool.ntp.org/server 0.it.pool.ntp.org/g' nano /etc/ntp.conf
-sed -i s'/server 1.ubuntu.pool.ntp.org/server 1.it.pool.ntp.org/g' nano /etc/ntp.conf
-sed -i s'/server 2.ubuntu.pool.ntp.org/server 2.it.pool.ntp.org/g' nano /etc/ntp.conf
-sed -i s'/server 3.ubuntu.pool.ntp.org/server 3.it.pool.ntp.org/g' nano /etc/ntp.conf
+sed -i s'/server 0.ubuntu.pool.ntp.org/server 0.it.pool.ntp.org/g' /etc/ntp.conf
+sed -i s'/server 1.ubuntu.pool.ntp.org/server 1.it.pool.ntp.org/g' /etc/ntp.conf
+sed -i s'/server 2.ubuntu.pool.ntp.org/server 2.it.pool.ntp.org/g' /etc/ntp.conf
+sed -i s'/server 3.ubuntu.pool.ntp.org/server 3.it.pool.ntp.org/g' /etc/ntp.conf
 #Then you’ll need to restart or start the NTPD service:
 /etc/init.d/ntpd restart 
 # or 
 ntpd restart
 #Have the Storjshare daemon run when reboot:
 echo '#!/bin/bash
- sudo storjshare daemon && sudo storjshare start --config $StorjConfigFile > /dev/null 2>&1
- ' >> /root/.config/storjshare/storjdaemon
+ sudo storjshare daemon && sudo storjshare start --config $(find /root/.config/storjshare/configs/ -type f -name "*.json" | head -n 1) > /dev/null 2>&1
+ ' > /root/.config/storjshare/storjdaemon
+
 chmod uga+x /root/.config/storjshare/storjdaemon
 sed -i '$ a 0 * * * * export DISPLAY=:1 && root /root/.config/storjshare/storjdaemon' /etc/crontab
 #At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
@@ -845,14 +840,14 @@ echo "(5/6) Set Up a Node.js Application for Production"
 sudo su -
 cd /home/
 sudo apt-get install -y python-software-properties
-#curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 #Running apt-get to Install Node.js
-#sudo apt-get install -y nodejs
-#sudo apt-get install build-essential -y
-sudo apt-get update -y
+sudo apt-get install -y nodejs
+sudo apt-get install build-essential -y
+sudo apt-get update
 #Finally, Update Your Version of npm
-sudo apt-get install build-essential libssl-dev -y
-#sudo npm install npm --global -y
+sudo apt-get install build-essential libssl-dev
+sudo npm install npm --global
 #Install Nginx
 sudo systemctl enable nginx
 sudo systemctl start nginx 
