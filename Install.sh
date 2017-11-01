@@ -113,7 +113,7 @@ if {$force_conservative} {
         }
 }
 set timeout -1
-spawn vncpasswd
+spawn vncpasswd :2
 match_max 100000
 expect -exact "Using password file /honeycomb01/.vnc/passwd\r
 Password: "
@@ -156,7 +156,7 @@ if {$force_conservative} {
         }
 }
 set timeout -1
-spawn vncpasswd
+spawn vncpasswd :3
 match_max 100000
 expect -exact "Using password file /honeycomb02/.vnc/passwd\r
 Password: "
