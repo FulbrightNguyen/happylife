@@ -174,13 +174,13 @@ su - $USER3 -c "vncserver :4"
 sudo su
 mkdir -p /etc/vncserver
 echo 'VNCSERVERS="1:root 2:honeycomb01 3:honeycomb02 4:honeycomb03"
-VNCSERVERARGS[1]="-geometry 1920x1068 -depth 16 -localhost"
-VNCSERVERARGS[2]="-geometry 1920x1068 -depth 16 -localhost"
-VNCSERVERARGS[3]="-geometry 1920x1068 -depth 16 -localhost"
-VNCSERVERARGS[4]="-geometry 1920x1068 -depth 16 -localhost"
+VNCSERVERARGS[1]="-geometry 1920x1068 -depth 16"
+VNCSERVERARGS[2]="-geometry 1920x1068 -depth 16"
+VNCSERVERARGS[3]="-geometry 1920x1068 -depth 16"
+VNCSERVERARGS[4]="-geometry 1920x1068 -depth 16"
 ' > /etc/vncserver/vncservers.conf
 
-chmod +x /etc/vncserver/vncservers.conf
+sudo chmod 777 /etc/vncserver/vncservers.conf
 #Create vnc service file
 #sudo nano /etc/init.d/vncserver
 echo '#!/bin/bash
@@ -252,18 +252,21 @@ esac
 ' > /etc/init.d/vncserver
 
 #Make the script executable, and add it to the startup scripts:
-chmod +x /etc/init.d/vncserver
+sudo chmod 777 /etc/init.d/vncserver
 update-rc.d vncserver defaults 99
 #Run this if have a warning, your script will still work: sudo apt-get remove insserv
 #Start the service
 systemctl daemon-reload
 service vncserver stop
 service vncserver start
-#/etc/init.d/vncserver start
-
+#Check that its running
+#service vncserver status
+#cat ~/.vnc/*.pid
+#ps -ef | grep tightvnc
+#netstat -nlp | grep vnc
 
 #Go to Desktop
-sudo su -
+sudo su
 cd /home/
 #Download toolkit from github
 #git init
@@ -274,7 +277,8 @@ git clone https://github.com/nnquangminh/mmo.git
 sudo tar Jxvf /home/mmo/hit.tar.xz -C /root/Desktop/ && unzip /home/mmo/kilohits.com-viewer-linux-x64.zip -d /root/Desktop/ && unzip /home/mmo/OtohitsApp_3107_Linux.zip -d /root/Desktop/ && unzip /home/mmo/crossover_13.1.3-1.zip -d /root/Desktop/mmo/ && unzip /home/mmo/jingling.zip -d /root/Desktop/ && unzip /home/mmo/proxy_scraper.zip -d /home/proxy
 sudo tar Jxvf /home/mmo/hit.tar.xz -C /home/honeycomb01/Desktop/ && unzip /home/mmo/kilohits.com-viewer-linux-x64.zip -d /home/honeycomb01/Desktop/ && unzip /home/mmo/OtohitsApp_3107_Linux.zip -d /home/honeycomb01/Desktop/
 sudo tar Jxvf /home/mmo/hit.tar.xz -C /home/honeycomb02/Desktop/ && unzip /home/mmo/kilohits.com-viewer-linux-x64.zip -d /home/honeycomb02/Desktop/ && unzip /home/mmo/OtohitsApp_3107_Linux.zip -d /home/honeycomb02/Desktop/
-sudo chown honeycomb01 -R /home/honeycomb01/Desktop/* && sudo chmod ugo+x -R /home/honeycomb01/Desktop/* && sudo chown honeycomb02 -R /home/honeycomb02/Desktop/* && sudo chmod ugo+x -R /home/honeycomb02/Desktop/*
+sudo tar Jxvf /home/mmo/hit.tar.xz -C /home/honeycomb03/Desktop/ && unzip /home/mmo/kilohits.com-viewer-linux-x64.zip -d /home/honeycomb03/Desktop/ && unzip /home/mmo/OtohitsApp_3107_Linux.zip -d /home/honeycomb03/Desktop/
+sudo chown honeycomb01 -R /home/honeycomb01/Desktop/* && sudo chmod ugo+x -R /home/honeycomb01/Desktop/* && sudo chown honeycomb02 -R /home/honeycomb02/Desktop/* && sudo chmod ugo+x -R /home/honeycomb02/Desktop/* && sudo chown honeycomb03 -R /home/honeycomb03/Desktop/* && sudo chmod ugo+x -R /home/honeycomb03/Desktop/*
 #or 
 #Hitleap
 # wget https://hitleap.com/viewer/download?platform=Linux -O hit.tar.xz && tar Jxvf hit.tar.xz
@@ -444,6 +448,7 @@ sudo make install
 #just change it proxychains57 to proxychains58, proxychains59 or whatever you want and create your proxy configuration files
 cp /etc/proxychains.conf /etc/honeycomb01.conf
 cp /etc/proxychains.conf /etc/honeycomb02.conf
+cp /etc/proxychains.conf /etc/honeycomb03.conf
 #or by manual: sudo touch /etc/honeycomb01.conf
 #You need to define another conf file for each proxy. It is easy. Type this command for edit configuration file:
 #sudo nano /etc/honeycomb01.conf
@@ -487,28 +492,41 @@ cp /etc/proxychains.conf /etc/honeycomb02.conf
  su $USER1
  su $USER1 -c "cd /home/"
 #Have the proxychains4 run when reboot:
-#nano ~/autostarthoneycomb01
+#nano ~/autoHoneycomb01
 echo '#!/bin/bash
 proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/app/HitLeap-Viewer && proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer > /dev/null 2>&1
-' >> /home/honeycomb01/autostarthoneycomb01
-chmod ugo+x /home/honeycomb01/autostarthoneycomb01
-
-#echo '0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autostarthoneycomb01' >> /etc/crontab
-sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autostarthoneycomb01' /etc/crontab
-
+' >> /home/honeycomb01/autoHoneycomb01
+chmod ugo+x /home/honeycomb01/autoHoneycomb01
 #At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
-#login honeycomb01 user
+#echo '0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autoHoneycomb01' >> /etc/crontab
+sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autoHoneycomb01' /etc/crontab
+
+
+#login honeycomb02 user
 su $USER2
 su $USER2 -c "cd /home/"
 #Have the proxychains4 run when reboot:
-#nano ~/autostarthoneycomb02
+#nano ~/autoHoneycomb02
 echo '#!/bin/bash
-proxychains4 -f /etc/honeycomb02.conf /home/honeycomb02/Desktop/app/HitLeap-Viewer && proxychains4 -f /etc/honeycomb02.conf /home/honeycomb02/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer > /dev/null 2>&1
-' >> /home/honeycomb02/autostarthoneycomb02
-chmod ugo+x /home/honeycomb02/autostarthoneycomb02
+proxychains4 -f /etc/honeycomb02.conf /home/honeycomb02/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer > /dev/null 2>&1
+' >> /home/honeycomb02/autoHoneycomb02
+chmod ugo+x /home/honeycomb02/autoHoneycomb02
+#At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
+#echo '0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autoHoneycomb02' >> /etc/crontab
+sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autoHoneycomb02' /etc/crontab
 
-#echo '0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autostarthoneycomb02' >> /etc/crontab
-sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autostarthoneycomb02' /etc/crontab
+#login honeycomb03 user
+su $USER3
+su $USER3 -c "cd /home/"
+#Have the proxychains4 run when reboot:
+#nano ~/autoHoneycomb03
+echo '#!/bin/bash
+proxychains4 -f /etc/honeycomb03.conf /home/honeycomb02/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer > /dev/null 2>&1
+' >> /home/honeycomb02/autoHoneycomb03
+chmod ugo+x /home/honeycomb02/autoHoneycomb03
+#At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
+#echo '0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autoHoneycomb03' >> /etc/crontab
+sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autoHoneycomb03' /etc/crontab
 
 
 
@@ -517,7 +535,7 @@ echo "(3/6) eBesucher hang up money tutorial (LXDE + VNC + restarter)"
 #Hang up conditions: VPS memory 512M or more; A European IP VPS
 ##PREPARE VNC Server with multiple users
 #Use cpulimit to limit the use of firefox to prevent stuck
-sudo su -
+sudo su
 sudo apt-get install cpulimit
 # linux -> cpulimit -> "sudo apt-get install cpulimit " then "cpulimit -p PID -l 10 -v" -> this means limit this pid to 10% if cpu. You can also just use paths or names like "cpulimit -e firefox -l 10 -v".
 # limit firefox use 50% cpu utilization 
@@ -528,10 +546,10 @@ cd /home/mmo/
 #Install Firefox:
 #sudo apt-get install firefox -y
 #Install chrome (optional)
- sudo wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
- sudo dpkg -i google-chrome-stable_current_amd64.deb
- sudo apt-get -f install -y
- sudo dpkg -i google-chrome-stable_current_amd64.deb
+sudo wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo dpkg -i google-chrome-stable_current_amd64.deb
+sudo apt-get -f install -y
+sudo dpkg -i google-chrome-stable_current_amd64.deb
 #run Google Chrome as root
 #Edit the /usr/bin/google-chrome and add the "--no-sandbox" or "–user-data-dir" at the end of the last line
 sed -i 's/\bexec -a "$0" "$HERE/chrome" "$@"\b/& --no-sandbox/' /usr/bin/google-chrome
@@ -539,11 +557,11 @@ sed -i 's/\bexec -a "$0" "$HERE/chrome" "$@"\b/& --no-sandbox/' /usr/bin/google-
 #&: refer to that portion of the pattern space which matched
 #Install Flash
 #Method:
- tar zxvf install_flash_player_11_linux.x86_64.tar.gz
- mkdir -p ~/.mozilla/plugins/
- cp libflashplayer.so ~/.mozilla/plugins/
- cp libflashplayer.so /usr/lib/mozilla/plugins/
- cp -r usr /usr
+tar zxvf install_flash_player_11_linux.x86_64.tar.gz
+mkdir -p ~/.mozilla/plugins/
+cp libflashplayer.so ~/.mozilla/plugins/
+cp libflashplayer.so /usr/lib/mozilla/plugins/
+cp -r usr /usr
 #Latest download address https://get.adobe.com/flashplayer/otherversions/
 #(3)Install Java (optional)
 #Debian:
@@ -583,7 +601,9 @@ sudo wget https://www.ebesucher.com/data/restarter-setup-others.v1.2.03.zip
 sudo unzip restarter-setup-others.v1.2.03.zip
 #Install java and restarter, through the vnc viewer into the desktop, start the terminal interface root terminal enter the following command:
 export DISPLAY=:1 && sudo java -jar restarter.jar
-dbus-uuidgen > /var/lib/dbus/machine-id
+su - $USER1 -c "export DISPLAY=:2 && java -jar restarter.jar"
+su - $USER2 -c "export DISPLAY=:3 && java -jar restarter.jar"
+su - $USER3 -c "export DISPLAY=:4 && java -jar restarter.jar"
 #(5)Set the restarter (optional)
 #Start the restarter after the need to set the restarter
 #Enter username and CODE can found in http://www.ebesucher.com/restarter.html 
@@ -613,7 +633,21 @@ dbus-uuidgen > /var/lib/dbus/machine-id
 
 #$USER1
 #Firefox:
-# sudo nano ~/restartFirefoxhoneycomb01.sh
+dbus-uuidgen > /var/lib/dbus/machine-id
+#Auto restart Autosurf Firefox
+echo '#!/bin/bash
+export DISPLAY=:2
+while [ 1 ]
+do
+        echo "Stop Firefox"
+        pgrep firefox && killall -9 firefox
+        sleep 5
+        /usr/bin/firefox -private http://10khits.com/surf https://www.websyndic.com/wv3/?p=surf01 http://www.hit4hit.org/user/earn-auto-website-view.php http://klixion.com/surf.php?id=23425 http://twistrix.com/surf3.php?Mc=de09a22d5e6419eb78430ce2dcbead81 https://www.ultraviews.net/Browser/?Username=nnquangminh & > /dev/null 2>&1
+        echo "Restart Firefox"
+        sleep 300
+done' > /home/honeycomb01/autorestartFirefoxAutosurfUser1.sh
+
+#Auto restart Ebesucher Firefox
 echo '#!/bin/sh
 export DISPLAY=:2
 cd ~/
@@ -621,18 +655,19 @@ rm -rf ~/.vnc/*.log /tmp/plugtmp* > /dev/null 2>&1
 killall firefox > /dev/null 2>&1
 killall java > /dev/null 2>&1
 /usr/bin/firefox --new-tab http://www.ebesucher.com/surfbar/nnquangminh & > /dev/null 2>&1
-/usr/bin/firefox -private http://10khits.com/surf https://www.websyndic.com/wv3/?p=surf01 http://www.hit4hit.org/user/earn-auto-website-view.php http://klixion.com/surf.php?id=23425 http://twistrix.com/surf3.php?Mc=de09a22d5e6419eb78430ce2dcbead81 https://www.ultraviews.net/Browser/?Username=nnquangminh & > /dev/null 2>&1
 cpulimit -e firefox -l 50 > /dev/null 2>&1
 /usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
-' >> /home/honeycomb01/restartFirefoxhoneycomb01.sh
+' >> /home/honeycomb01/autorestartFirefoxEbesucherUser1.sh
 #Where, http://www.ebesucher.com/surfbar/username in the username to your user name
 #to the script to add executable permissions 
- sudo chmod a+x /home/honeycomb01/restartFirefoxhoneycomb01.sh
+sudo chmod a+x /home/honeycomb01/autorestartFirefoxAutosurfUser1.sh
+sudo chmod a+x /home/honeycomb01/autorestartFirefoxEbesucherUser1.sh
 #Edit crontab
 # sudo nano /etc/crontab
 #setup once every hour the script 
 # 0 * * * * honeycomb01 /home/honeycomb01/restartFirefoxhoneycomb01.sh
-sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/restartFirefoxhoneycomb01.sh' /etc/crontab
+sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autorestartFirefoxAutosurfUser1.sh' /etc/crontab
+sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autorestartFirefoxEbesucherUser1.sh' /etc/crontab
 #*/3 * * * * [ -z "`ps -ef | grep java | grep -v grep`" ] && nohup bash /root/restart > /dev/null 2>&1 &
 #The command will be 3 minutes to detect whether the process called java process, if not run the restart script. 
 #So that the machine can automatically restart after the accident, if the VPS is running unstable or suspended animation, etc., 
@@ -641,7 +676,7 @@ sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/restart
 #restart cron
 
 #Chrome:
-# nano /home/honeycomb01/restartChromehoneycomb01.sh
+# nano /home/honeycomb01/autorestartChromeEbesucherUser1.sh
 echo '#!/bin/sh
 export DISPLAY=:2
 cd ~/
@@ -650,40 +685,55 @@ killall java > /dev/null 2>&1
 killall chrome > /dev/null 2>&1
 /opt/google/chrome/chrome --new-tab http://www.ebesucher.com/surfbar/nnquangminh --no-sandbox  > /dev/null 2>&1
 /usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
-' >> /home/honeycomb01/restartChromehoneycomb01.sh
+' >> /home/honeycomb01/autorestartChromeEbesucherUser1.sh
 
 #Where, http://www.ebesucher.com/surfbar/username in the username to your user name
 #to the script to add executable permissions 
- sudo chmod a+x /home/honeycomb01/restartChromehoneycomb01.sh
+ sudo chmod a+x /home/honeycomb01/autorestartChromeEbesucherUser1.sh
 #edit cron
 #sudo nano /etc/crontab
 #setup once every hour the script
-# 0 * * * * honeycomb01 ~/restartChromehoneycomb01.sh
-sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/restartChromehoneycomb01.sh' /etc/crontab
+# 0 * * * * honeycomb01 ~/autorestartChromeEbesucherUser1.sh
+sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autorestartChromeEbesucherUser1.sh' /etc/crontab
 
-#Make scripts, restart the browser and restarter regularly
+
 #$USER2
-
 #Firefox:
- echo '#!/bin/sh
+dbus-uuidgen > /var/lib/dbus/machine-id
+#Auto restart Autosurf Firefox
+echo '#!/bin/bash
+export DISPLAY=:3
+while [ 1 ]
+do
+        echo "Stop Firefox"
+        pgrep firefox && killall -9 firefox
+        sleep 5
+        /usr/bin/firefox -private http://10khits.com/surf https://www.websyndic.com/wv3/?p=surf01 http://www.hit4hit.org/user/earn-auto-website-view.php http://klixion.com/surf.php?id=23425 http://twistrix.com/surf3.php?Mc=de09a22d5e6419eb78430ce2dcbead81 https://www.ultraviews.net/Browser/?Username=nnquangminh & > /dev/null 2>&1
+        echo "Restart Firefox"
+        sleep 300
+done' > /home/honeycomb02/autorestartFirefoxAutosurfUser2.sh
+
+#Auto restart Ebesucher Firefox
+echo '#!/bin/sh
 export DISPLAY=:3
 cd ~/
 rm -rf ~/.vnc/*.log /tmp/plugtmp* > /dev/null 2>&1
 killall firefox > /dev/null 2>&1
 killall java > /dev/null 2>&1
 /usr/bin/firefox --new-tab http://www.ebesucher.com/surfbar/nnquangminh & > /dev/null 2>&1
-/usr/bin/firefox -private http://10khits.com/surf https://www.websyndic.com/wv3/?p=surf02 http://www.hit4hit.org/user/earn-auto-website-view.php http://klixion.com/surf.php?id=23425 http://twistrix.com/surf3.php?Mc=de09a22d5e6419eb78430ce2dcbead81 https://www.ultraviews.net/Browser/?Username=nnquangminh & > /dev/null 2>&1
 cpulimit -e firefox -l 50 > /dev/null 2>&1
 /usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
-' >> /home/honeycomb02/restartFirefoxhoneycomb02.sh
+' >> /home/honeycomb02/autorestartFirefoxEbesucherUser2.sh
 #Where, http://www.ebesucher.com/surfbar/username in the username to your user name
 #to the script to add executable permissions 
- sudo chmod a+x /home/honeycomb02/restartFirefoxhoneycomb02.sh
+sudo chmod a+x /home/honeycomb02/autorestartFirefoxAutosurfUser2.sh
+sudo chmod a+x /home/honeycomb02/autorestartFirefoxEbesucherUser2.sh
 #Edit crontab
 # sudo nano /etc/crontab
 #setup once every hour the script 
 # 0 * * * * honeycomb02 /home/honeycomb02/restartFirefoxhoneycomb02.sh
-sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/restartFirefoxhoneycomb02.sh' /etc/crontab
+sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autorestartFirefoxAutosurfUser2.sh' /etc/crontab
+sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autorestartFirefoxEbesucherUser2.sh' /etc/crontab
 #*/3 * * * * [ -z "`ps -ef | grep java | grep -v grep`" ] && nohup bash /root/restart > /dev/null 2>&1 &
 #The command will be 3 minutes to detect whether the process called java process, if not run the restart script. 
 #So that the machine can automatically restart after the accident, if the VPS is running unstable or suspended animation, etc., 
@@ -692,25 +742,93 @@ sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/restart
 #restart cron
 
 #Chrome:
-# nano /home/honeycomb02/restartChromehoneycomb02.sh
+# nano /home/honeycomb02/autorestartChromeEbesucherUser2.sh
 echo '#!/bin/sh
 export DISPLAY=:3
 cd ~/
 rm -rf ~/.vnc/*.log /tmp/plugtmp* > /dev/null 2>&1
 killall java > /dev/null 2>&1
 killall chrome > /dev/null 2>&1
-/opt/google/chrome/chrome --new-tab http://www.ebesucher.com/surfbar/nnquangminh --no-sandbox & > /dev/null 2>&1
+/opt/google/chrome/chrome --new-tab http://www.ebesucher.com/surfbar/nnquangminh --no-sandbox  > /dev/null 2>&1
 /usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
-' >> /home/honeycomb02/restartChromehoneycomb02.sh
+' >> /home/honeycomb02/autorestartChromeEbesucherUser2.sh
 
 #Where, http://www.ebesucher.com/surfbar/username in the username to your user name
 #to the script to add executable permissions 
- sudo chmod a+x /home/honeycomb02/restartChromehoneycomb02.sh
+ sudo chmod a+x /home/honeycomb02/autorestartChromeEbesucherUser2.sh
 #edit cron
 #sudo nano /etc/crontab
 #setup once every hour the script
-# 0 * * * * honeycomb02 ~/restartChromehoneycomb02.sh
-sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/restartChromehoneycomb02.sh' /etc/crontab
+# 0 * * * * honeycomb02 ~/autorestartChromeEbesucherUser2.sh
+sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autorestartChromeEbesucherUser2.sh' /etc/crontab
+
+
+#$USER3
+#Firefox:
+dbus-uuidgen > /var/lib/dbus/machine-id
+#Auto restart Autosurf Firefox
+echo '#!/bin/bash
+export DISPLAY=:4
+while [ 1 ]
+do
+        echo "Stop Firefox"
+        pgrep firefox && killall -9 firefox
+        sleep 5
+        /usr/bin/firefox -private http://10khits.com/surf https://www.websyndic.com/wv3/?p=surf01 http://www.hit4hit.org/user/earn-auto-website-view.php http://klixion.com/surf.php?id=23425 http://twistrix.com/surf3.php?Mc=de09a22d5e6419eb78430ce2dcbead81 https://www.ultraviews.net/Browser/?Username=nnquangminh & > /dev/null 2>&1
+        echo "Restart Firefox"
+        sleep 300
+done' > /home/honeycomb03/autorestartFirefoxAutosurfUser3.sh
+
+#Auto restart Ebesucher Firefox
+echo '#!/bin/sh
+export DISPLAY=:4
+cd ~/
+rm -rf ~/.vnc/*.log /tmp/plugtmp* > /dev/null 2>&1
+killall firefox > /dev/null 2>&1
+killall java > /dev/null 2>&1
+/usr/bin/firefox --new-tab http://www.ebesucher.com/surfbar/nnquangminh & > /dev/null 2>&1
+cpulimit -e firefox -l 50 > /dev/null 2>&1
+/usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
+' >> /home/honeycomb03/autorestartFirefoxEbesucherUser3.sh
+#Where, http://www.ebesucher.com/surfbar/username in the username to your user name
+#to the script to add executable permissions 
+sudo chmod a+x /home/honeycomb03/autorestartFirefoxAutosurfUser3.sh
+sudo chmod a+x /home/honeycomb03/autorestartFirefoxEbesucherUser3.sh
+#Edit crontab
+# sudo nano /etc/crontab
+#setup once every hour the script 
+# 0 * * * * honeycomb03 /home/honeycomb03/restartFirefoxhoneycomb03.sh
+sed -i '$ a 0 * * * * export DISPLAY=:4 && honeycomb03 /home/honeycomb03/autorestartFirefoxAutosurfUser3.sh' /etc/crontab
+sed -i '$ a 0 * * * * export DISPLAY=:4 && honeycomb03 /home/honeycomb03/autorestartFirefoxEbesucherUser3.sh' /etc/crontab
+#*/3 * * * * [ -z "`ps -ef | grep java | grep -v grep`" ] && nohup bash /root/restart > /dev/null 2>&1 &
+#The command will be 3 minutes to detect whether the process called java process, if not run the restart script. 
+#So that the machine can automatically restart after the accident, if the VPS is running unstable or suspended animation, etc., 
+#can be synchronized with the regular restart to achieve the purpose of automation. 
+#Note that the test conditions are only applicable to you only run a Restarter this instance, if there are other JAVA instance, you can not determine whether the Restarter run!
+#restart cron
+
+#Chrome:
+# nano /home/honeycomb03/autorestartChromeEbesucherUser3.sh
+echo '#!/bin/sh
+export DISPLAY=:4
+cd ~/
+rm -rf ~/.vnc/*.log /tmp/plugtmp* > /dev/null 2>&1
+killall java > /dev/null 2>&1
+killall chrome > /dev/null 2>&1
+/opt/google/chrome/chrome --new-tab http://www.ebesucher.com/surfbar/nnquangminh --no-sandbox  > /dev/null 2>&1
+/usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
+' >> /home/honeycomb03/autorestartChromeEbesucherUser3.sh
+
+#Where, http://www.ebesucher.com/surfbar/username in the username to your user name
+#to the script to add executable permissions 
+ sudo chmod a+x /home/honeycomb03/autorestartChromeEbesucherUser3.sh
+#edit cron
+#sudo nano /etc/crontab
+#setup once every hour the script
+# 0 * * * * honeycomb03 ~/autorestartChromeEbesucherUser3.sh
+sed -i '$ a 0 * * * * export DISPLAY=:4 && honeycomb03 /home/honeycomb03/autorestartChromeEbesucherUser3.sh' /etc/crontab
+
+
 #restart cron
 sudo service cron restart
 
@@ -727,7 +845,7 @@ sudo service cron restart
 #		sleep 300
 #done' > autorestartFirefox.sh 
 
-echo "(4/6) Install a StorJ miner"
+echo "(4/6) Install a StorJshare miner"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #How to install a StorJ miner on Ubuntu via Command Line
 #----------------------------------------------------------------------------------------------------------------------------------------
@@ -737,7 +855,7 @@ echo "(4/6) Install a StorJ miner"
 #sudo rm -rf /usr/local/lib/node*
 #sudo rm -rf /usr/local/include/node*
 #sudo rm -rf /usr/local/bin/node*
-sudo su -
+sudo su
 cd /home/
 sudo apt-get install -y build-essential curl git m4 ruby texinfo libbz2-dev libcurl4-openssl-dev libexpat-dev libncurses-dev zlib1g-dev
 sudo curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
@@ -825,12 +943,14 @@ sudo service cron restart
 
 #Done!
 
+
+
 echo "(5/6) Set Up a Node.js Application for Production"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #How to install a StorJ miner on Ubuntu via Command Line
 #----------------------------------------------------------------------------------------------------------------------------------------
 #Download and setup the APT repository add the PGP key to the system’s APT keychain,
-sudo su -
+sudo su
 cd /home/
 sudo apt-get install -y python-software-properties
 curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
@@ -897,6 +1017,9 @@ pm2 save
 # http://example.com/*
  #redirected with a 301 response code to
 # https://www.example.com/$1
+
+
+
 echo "(6/6) Add DRAGONBALL aliases"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo "" >> ~/.bashrc
