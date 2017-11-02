@@ -56,12 +56,11 @@ chmod 777 setpwd_vnc_root.sh
 ./setpwd_vnc_root.sh
 #hard return (\r )
 rm -rf setpwd_vnc_root.sh
-
-vncserver -kill :1
-mv /root/.vnc/xstartup /root/.vnc/xstartup.backup
-
+#vncserver -kill :1
+#mv /root/.vnc/xstartup /root/.vnc/xstartup.backup
 #nano /root/.vnc/xstartup
 echo '#!/bin/bash
+unset SESSION_MANAGER
 [ -r ~/.Xresources ] && xrdb ~/.Xresources
 autocutsel -fork
 startxfce4 &
@@ -70,7 +69,6 @@ startxfce4 &
 #make it executable:  
 sudo chmod +x /root/.vnc/xstartup
 #vncserver :1
-
 #Add another users
 USER1='honeycomb01'
 #sudo adduser honeycomb01
@@ -92,6 +90,18 @@ sudo useradd -m -c "honeycomb03" honeycomb03 -s /bin/bash -d /home/honeycomb03
 sudo usermod -aG sudo honeycomb03
 echo 'honeycomb03 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
+echo '#!/bin/sh    
+myuser="$1"
+mypasswd="1"
+mkdir -p /home/$myuser/.vnc
+echo $mypasswd | vncpasswd -f > /home/$myuser/.vnc/passwd
+chown -R $myuser:$myuser /home/$myuser/.vnc
+chmod 0600 /home/$myuser/.vnc/passwd' > /home/setVncUserPasswd.sh
+chmod 777 /home/setVncUserPasswd.sh
+
+#reset root vnc passwd
+sudo /home/./setVncUserPasswd.sh root
+
 #USER1
 #Run command in other user by using
 #su user -c "command"
@@ -102,37 +112,14 @@ su - $USER1 -c "cd /home/"
 su - $USER1 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
 #setVncPasswd.sh
 #$ ./setVncPasswd <myuser> <mypasswd>
-
-echo '#!/usr/bin/expect -f
-set force_conservative 0  
-if {$force_conservative} {
-        set send_slow {1 .1}
-        proc send {ignore arg} {
-                sleep .1
-                exp_send -s -- $arg
-        }
-}
-set timeout -1
-spawn vncpasswd :2
-match_max 100000
-expect -exact "Using password file /honeycomb01/.vnc/passwd\r
-Password: "
-send -- "Win@123\r"
-expect -exact "\r
-Verify:   "
-send -- "Win@123\r"
-expect -exact "\r
-Would you like to enter a view-only password (y/n)? "
-send -- "n\r"
-expect eof' > /home/$USER1/setVncPasswd.sh
-
-su - $USER1 -c "sudo chown -R $USER1 /home/$USER1/setVncPasswd.sh && sudo chmod 777 /home/$USER1/setVncPasswd.sh"
-su - $USER1 -c "sudo /home/$USER1/./setVncPasswd.sh"
-su - $USER1 -c "sudo rm -rf /home/$USER1/setVncPasswd.sh"
-su - $USER1 -c "sudo vncserver -kill :2"
-su - $USER1 -c "sudo mv /home/$USER1/.vnc/xstartup /home/$USER1/.vnc/xstartup.backup"
+#su - $USER1 -c "sudo chown -R $USER1 /home/$USER1/setVncPasswd.sh && sudo chmod 777 /home/$USER1/setVncPasswd.sh"
+su - $USER1 -c "sudo /home/./setVncUserPasswd.sh honeycomb01"
+#su - $USER1 -c "sudo rm -rf /home/$USER1/setVncPasswd.sh"
+#su - $USER1 -c "sudo vncserver -kill :2"
+#su - $USER1 -c "sudo mv /home/$USER1/.vnc/xstartup /home/$USER1/.vnc/xstartup.backup"
 #nano ~/.vnc/xstartup
 echo '#!/bin/bash
+unset SESSION_MANAGER
 [ -r ~/.Xresources ] && xrdb ~/.Xresources
 autocutsel -fork
 startxfce4 &
@@ -141,41 +128,23 @@ startxfce4 &
 su - $USER1 -c "sudo chown -R $USER1 /home/$USER1/.vnc/xstartup && sudo chmod 777 /home/$USER1/.vnc/xstartup"
 
 #USER2
+#Run command in other user by using
+#su user -c "command"
+#or
+#sudo -u user "command"
 su - $USER2 -c "cd /home/"
 #install necessary stuff for desktop
 su - $USER2 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
 #setVncPasswd.sh
 #$ ./setVncPasswd <myuser> <mypasswd>
-echo '#!/usr/bin/expect -f
-set force_conservative 0  
-if {$force_conservative} {
-        set send_slow {1 .1}
-        proc send {ignore arg} {
-                sleep .1
-                exp_send -s -- $arg
-        }
-}
-set timeout -1
-spawn vncpasswd :3
-match_max 100000
-expect -exact "Using password file /honeycomb02/.vnc/passwd\r
-Password: "
-send -- "Win@123\r"
-expect -exact "\r
-Verify:   "
-send -- "Win@123\r"
-expect -exact "\r
-Would you like to enter a view-only password (y/n)? "
-send -- "n\r"
-expect eof' > /home/$USER2/setVncPasswd.sh
-
-su - $USER2 -c "sudo chown -R $USER2 /home/$USER2/setVncPasswd.sh && sudo chmod 777 /home/$USER2/setVncPasswd.sh"
-su - $USER2 -c "sudo /home/$USER2/./setVncPasswd.sh"
-su - $USER2 -c "sudo rm -rf /home/$USER2/setVncPasswd.sh"
-su - $USER2 -c "sudo vncserver -kill :3"
-su - $USER2 -c "sudo mv /home/$USER2/.vnc/xstartup /home/$USER2/.vnc/xstartup.backup"
+#su - $USER2 -c "sudo chown -R $USER2 /home/$USER2/setVncPasswd.sh && sudo chmod 777 /home/$USER2/setVncPasswd.sh"
+su - $USER2 -c "sudo /home/./setVncUserPasswd.sh honeycomb02"
+#su - $USER2 -c "sudo rm -rf /home/$USER2/setVncPasswd.sh"
+#su - $USER2 -c "sudo vncserver -kill :3"
+#su - $USER2 -c "sudo mv /home/$USER2/.vnc/xstartup /home/$USER2/.vnc/xstartup.backup"
 #nano ~/.vnc/xstartup
 echo '#!/bin/bash
+unset SESSION_MANAGER
 [ -r ~/.Xresources ] && xrdb ~/.Xresources
 autocutsel -fork
 startxfce4 &
@@ -183,13 +152,40 @@ startxfce4 &
 #make it executable:  
 su - $USER2 -c "sudo chown -R $USER2 /home/$USER2/.vnc/xstartup && sudo chmod 777 /home/$USER2/.vnc/xstartup"
 
+#USER3
+#Run command in other user by using
+#su user -c "command"
+#or
+#sudo -u user "command"
+su - $USER3 -c "cd /home/"
+#install necessary stuff for desktop
+su - $USER3 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
+#setVncPasswd.sh
+#$ ./setVncPasswd <myuser> <mypasswd>
+#su - $USER3 -c "sudo chown -R $USER3 /home/$USER3/setVncPasswd.sh && sudo chmod 777 /home/$USER3/setVncPasswd.sh"
+su - $USER3 -c "sudo /home/./setVncUserPasswd.sh honeycomb03"
+#su - $USER3 -c "sudo rm -rf /home/$USER3/setVncPasswd.sh"
+#su - $USER3 -c "sudo vncserver -kill :4"
+#su - $USER3 -c "sudo mv /home/$USER3/.vnc/xstartup /home/$USER3/.vnc/xstartup.backup"
+#nano ~/.vnc/xstartup
+echo '#!/bin/bash
+unset SESSION_MANAGER
+[ -r ~/.Xresources ] && xrdb ~/.Xresources
+autocutsel -fork
+startxfce4 &
+' > /home/$USER3/.vnc/xstartup
+#make it executable:  
+su - $USER3 -c "sudo chown -R $USER3 /home/$USER3/.vnc/xstartup && sudo chmod 777 /home/$USER3/.vnc/xstartup"
+
+
 #So, switch to root (it is just more easier) and then create vncserver folder and create file as vncservers.conf:
 sudo su -
 mkdir -p /etc/vncserver
-echo 'VNCSERVERS="1:root 2:honeycomb01 3:honeycomb02"
-VNCSERVERARGS[1]="-geometry 1024x768 -depth 24"
-VNCSERVERARGS[2]="-geometry 1024x768 -depth 24"
-VNCSERVERARGS[3]="-geometry 1024x768 -depth 24"
+echo 'VNCSERVERS="1:root 2:honeycomb01 3:honeycomb02 4:honeycomb03"
+VNCSERVERARGS[1]="-geometry 1920x1068 -depth 16 -localhost"
+VNCSERVERARGS[2]="-geometry 1920x1068 -depth 16 -localhost"
+VNCSERVERARGS[3]="-geometry 1920x1068 -depth 16 -localhost"
+VNCSERVERARGS[4]="-geometry 1920x1068 -depth 16 -localhost"
 ' > /etc/vncserver/vncservers.conf
 
 chmod +x /etc/vncserver/vncservers.conf
