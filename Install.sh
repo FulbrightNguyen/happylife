@@ -13,7 +13,6 @@ echo "                DEBUG VERSION WITH A LOT OF OUTPUT"
 echo ""
 echo " ============================================================"
 echo ""
-
 echo "(1/6) Update the base system & Install traffic exchange apps..."
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Install some traffic exchange script on VPS ubuntu 16.04.
@@ -28,16 +27,8 @@ cd /home/
 ##PREPARE VNC Server with multiple users
 sudo apt update && sudo apt upgrade -y && sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel expect -y
 #then add users
-#vncserver
-echo '#!/usr/bin/expect -f
-set force_conservative 0  
-if {$force_conservative} {
-        set send_slow {1 .1}
-        proc send {ignore arg} {
-                sleep .1
-                exp_send -s -- $arg
-        }
-}
+#Set vncserver root password
+/usr/bin/expect << EOF
 set timeout -1
 spawn vncpasswd
 match_max 100000
@@ -50,12 +41,10 @@ send -- "Win@123\r"
 expect -exact "\r
 Would you like to enter a view-only password (y/n)? "
 send -- "n\r"
-expect eof' > setpwd_vnc_root.sh
+expect eof
+exit
+EOF
 
-chmod 777 setpwd_vnc_root.sh
-./setpwd_vnc_root.sh
-#hard return (\r )
-rm -rf setpwd_vnc_root.sh
 #vncserver -kill :1
 #mv /root/.vnc/xstartup /root/.vnc/xstartup.backup
 #nano /root/.vnc/xstartup
@@ -68,7 +57,8 @@ startxfce4 &
 
 #make it executable:  
 sudo chmod +x /root/.vnc/xstartup
-#vncserver :1
+sudo vncserver :1
+
 #Add another users
 USER1='honeycomb01'
 #sudo adduser honeycomb01
@@ -114,9 +104,9 @@ su - $USER1 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver a
 #$ ./setVncPasswd <myuser> <mypasswd>
 #su - $USER1 -c "sudo chown -R $USER1 /home/$USER1/setVncPasswd.sh && sudo chmod 777 /home/$USER1/setVncPasswd.sh"
 su - $USER1 -c "sudo /home/./setVncUserPasswd.sh honeycomb01"
-#su - $USER1 -c "sudo rm -rf /home/$USER1/setVncPasswd.sh"
-#su - $USER1 -c "sudo vncserver -kill :2"
-#su - $USER1 -c "sudo mv /home/$USER1/.vnc/xstartup /home/$USER1/.vnc/xstartup.backup"
+#su - $USER1 -c "rm -rf /home/$USER1/setVncPasswd.sh"
+#su - $USER1 -c "vncserver -kill :2"
+#su - $USER1 -c "mv /home/$USER1/.vnc/xstartup /home/$USER1/.vnc/xstartup.backup"
 #nano ~/.vnc/xstartup
 echo '#!/bin/bash
 unset SESSION_MANAGER
@@ -126,6 +116,7 @@ startxfce4 &
 ' > /home/$USER1/.vnc/xstartup
 #make it executable:  
 su - $USER1 -c "sudo chown -R $USER1 /home/$USER1/.vnc/xstartup && sudo chmod 777 /home/$USER1/.vnc/xstartup"
+su - $USER2 -c "vncserver :2"
 
 #USER2
 #Run command in other user by using
@@ -139,9 +130,9 @@ su - $USER2 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver a
 #$ ./setVncPasswd <myuser> <mypasswd>
 #su - $USER2 -c "sudo chown -R $USER2 /home/$USER2/setVncPasswd.sh && sudo chmod 777 /home/$USER2/setVncPasswd.sh"
 su - $USER2 -c "sudo /home/./setVncUserPasswd.sh honeycomb02"
-#su - $USER2 -c "sudo rm -rf /home/$USER2/setVncPasswd.sh"
-#su - $USER2 -c "sudo vncserver -kill :3"
-#su - $USER2 -c "sudo mv /home/$USER2/.vnc/xstartup /home/$USER2/.vnc/xstartup.backup"
+#su - $USER2 -c "rm -rf /home/$USER2/setVncPasswd.sh"
+#su - $USER2 -c "vncserver -kill :3"
+#su - $USER2 -c "mv /home/$USER2/.vnc/xstartup /home/$USER2/.vnc/xstartup.backup"
 #nano ~/.vnc/xstartup
 echo '#!/bin/bash
 unset SESSION_MANAGER
@@ -151,6 +142,7 @@ startxfce4 &
 ' > /home/$USER2/.vnc/xstartup
 #make it executable:  
 su - $USER2 -c "sudo chown -R $USER2 /home/$USER2/.vnc/xstartup && sudo chmod 777 /home/$USER2/.vnc/xstartup"
+su - $USER2 -c "vncserver :3"
 
 #USER3
 #Run command in other user by using
@@ -164,9 +156,9 @@ su - $USER3 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver a
 #$ ./setVncPasswd <myuser> <mypasswd>
 #su - $USER3 -c "sudo chown -R $USER3 /home/$USER3/setVncPasswd.sh && sudo chmod 777 /home/$USER3/setVncPasswd.sh"
 su - $USER3 -c "sudo /home/./setVncUserPasswd.sh honeycomb03"
-#su - $USER3 -c "sudo rm -rf /home/$USER3/setVncPasswd.sh"
-#su - $USER3 -c "sudo vncserver -kill :4"
-#su - $USER3 -c "sudo mv /home/$USER3/.vnc/xstartup /home/$USER3/.vnc/xstartup.backup"
+#su - $USER3 -c "rm -rf /home/$USER3/setVncPasswd.sh"
+#su - $USER3 -c "vncserver -kill :4"
+#su - $USER3 -c "mv /home/$USER3/.vnc/xstartup /home/$USER3/.vnc/xstartup.backup"
 #nano ~/.vnc/xstartup
 echo '#!/bin/bash
 unset SESSION_MANAGER
@@ -176,10 +168,10 @@ startxfce4 &
 ' > /home/$USER3/.vnc/xstartup
 #make it executable:  
 su - $USER3 -c "sudo chown -R $USER3 /home/$USER3/.vnc/xstartup && sudo chmod 777 /home/$USER3/.vnc/xstartup"
-
+su - $USER3 -c "vncserver :4"
 
 #So, switch to root (it is just more easier) and then create vncserver folder and create file as vncservers.conf:
-sudo su -
+sudo su
 mkdir -p /etc/vncserver
 echo 'VNCSERVERS="1:root 2:honeycomb01 3:honeycomb02 4:honeycomb03"
 VNCSERVERARGS[1]="-geometry 1920x1068 -depth 16 -localhost"
