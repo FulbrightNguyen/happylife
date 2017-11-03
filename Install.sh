@@ -15,17 +15,17 @@ echo " ============================================================"
 echo ""
 # ============================ LETS MAGIC BEGINS =========================================================================================
 # === WEB SERVER DATA ===
-SERVER_NAME="Univerchain"
+SERVER_NAME="xxx"
 SERVER_IP=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
 
 USER1='honeycomb01'
 USER2='honeycomb02'
 USER3='honeycomb03'
-SUDO_PASSWORD="greatway@123"
-MYSQL_ROOT_PASSWORD="bestway@123"
+SUDO_PASSWORD="**************"
+MYSQL_ROOT_PASSWORD="****************"
 
 # SSH access via password will be disabled. Use keys instead.
-PUBLIC_SSH_KEYS="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC6tFAz2cweXLFl95dLZWhhrsFODUm0Ic1l36B9IEZmkh43XKHzVWF6fiPsXmENv66ZUs+LJcgLNg34CDEfJ4+KBI6L8guAxc4nel30GSg7fo1NdtzedcbK+YVhSwtMi/Bv9jhXlBNvnSAC3lCtFzejb7lQTPqvf5ufgyTETeTkZdylsqHXD/5wug6nrYs0bNoSZc7LC/p7lmu50MckI8+aIwDjRjqRdayUUcvC8A9KQGWg79LwtE5SllugbdgH2jcyIZFj4hpkZegwXkVsaM+yu9T/oGhRXxXbZORYssdCOOD0M4oQofbrelm9fbRmHzSFtKQqxzQreMPgOSec4VLT bigbee"
+PUBLIC_SSH_KEYS="ssh-rsa AAAAB3NzaC1yc2EAAAADAQA...."
 
 # if vps not contains swap file - create it
 SWAP_SIZE="1G"
