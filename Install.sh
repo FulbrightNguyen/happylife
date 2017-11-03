@@ -13,6 +13,8 @@ echo "                DEBUG VERSION WITH A LOT OF OUTPUT"
 echo ""
 echo " ============================================================"
 echo ""
+# ============================ LETS MAGIC BEGINS =========================================================================================
+
 echo "(1/6) Update the base system & Install traffic exchange apps..."
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Install some traffic exchange script on VPS ubuntu 16.04.
@@ -23,6 +25,7 @@ echo "(1/6) Update the base system & Install traffic exchange apps..."
 #Requirement
 #- SSH client (port forwarding need) or Putty
 #- VNC client
+sudo su
 cd /home/
 ##PREPARE VNC Server with multiple users
 sudo apt update && sudo apt upgrade -y && sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel expect -y
@@ -80,6 +83,17 @@ sudo useradd -m -c "honeycomb03" honeycomb03 -s /bin/bash -d /home/honeycomb03
 sudo usermod -aG sudo honeycomb03
 echo 'honeycomb03 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
+echo '#!/bin/sh
+myuser="root"
+mypasswd="1"
+mkdir -p /$myuser/.vnc
+echo $mypasswd | vncpasswd -f > /$myuser/.vnc/passwd
+chown -R $myuser:$myuser /$myuser/.vnc
+chmod 0600 /$myuser/.vnc/passwd' > /home/setVncRootPasswd.sh
+sudo chmod 777 /home/setVncRootPasswd.sh
+sudo /home/./setVncRootPasswd.sh
+sudo rm -rf /home/setVncRootPasswd.sh
+
 echo '#!/bin/sh    
 myuser="$1"
 mypasswd="1"
@@ -87,10 +101,9 @@ mkdir -p /home/$myuser/.vnc
 echo $mypasswd | vncpasswd -f > /home/$myuser/.vnc/passwd
 chown -R $myuser:$myuser /home/$myuser/.vnc
 chmod 0600 /home/$myuser/.vnc/passwd' > /home/setVncUserPasswd.sh
-chmod 777 /home/setVncUserPasswd.sh
-
+sudo chmod 777 /home/setVncUserPasswd.sh
+sudo rm -rf /home/setVncUserPasswd.sh
 #reset root vnc passwd
-sudo /home/./setVncUserPasswd.sh root
 
 #USER1
 #Run command in other user by using
@@ -170,8 +183,9 @@ startxfce4 &
 su - $USER3 -c "sudo chown -R $USER3 /home/$USER3/.vnc/xstartup && sudo chmod 777 /home/$USER3/.vnc/xstartup"
 su - $USER3 -c "vncserver :4"
 
+
 #So, switch to root (it is just more easier) and then create vncserver folder and create file as vncservers.conf:
-sudo su
+########################################
 mkdir -p /etc/vncserver
 echo 'VNCSERVERS="1:root 2:honeycomb01 3:honeycomb02 4:honeycomb03"
 VNCSERVERARGS[1]="-geometry 1920x1068 -depth 16"
@@ -253,7 +267,7 @@ esac
 
 #Make the script executable, and add it to the startup scripts:
 sudo chmod 777 /etc/init.d/vncserver
-update-rc.d vncserver defaults 99
+update-rc.d vncserver defaults
 #Run this if have a warning, your script will still work: sudo apt-get remove insserv
 #Start the service
 systemctl daemon-reload
@@ -266,7 +280,7 @@ service vncserver start
 #netstat -nlp | grep vnc
 
 #Go to Desktop
-sudo su
+########################################
 cd /home/
 #Download toolkit from github
 #git init
@@ -349,6 +363,12 @@ cp -rf /home/mmo/crossover_13.1.3-1/crack/winewrapper.exe.so /opt/cxoffice/lib/w
 # https://www.tumblr.com/
 # https://plus.google.com/
 # https://www.facebook.com/
+#User has to belong to the "crontab" group
+sudo usermod -aG crontab root
+sudo usermod -aG crontab honeycomb01
+sudo usermod -aG crontab honeycomb02
+sudo usermod -aG crontab honeycomb03
+sudo chmod ug+x /etc/crontab
 #Task management
 apt install htop
 #Generate a report of the network usage 
@@ -370,27 +390,20 @@ sed -i s'/dns-nameservers.*/dns-nameservers 8.8.8.8 8.8.4.4/g' /etc/network/inte
 #Manually restart your network interface with the new settings
 #systemctl restart ifup@eth0
 /etc/init.d/networking restart
-#Type the following commands to verify your new setup, enter:
+
 #Auto restart a crashed app
-#nano ~/autorestartCrashedApp
 echo '#!/bin/bash
 COUNTER=0
 while [  $COUNTER -lt 10 ]; do
-/home/app/./HitLeap-Viewer > /dev/null 2>&1
-/home/kilohits.com-viewer-linux-x64/./kilohits.com-viewer > /dev/null 2>&1
+/home/app/./HitLeap-Viewer && /home/kilohits.com-viewer-linux-x64/./kilohits.com-viewer > /dev/null 2>&1
 sleep 10800 #3 hour
-killall firefox
+killall /home/app/./HitLeap-Viewer && /home/kilohits.com-viewer-linux-x64/./kilohits.com-viewer > /dev/null 2>&1
 sleep 10
-done
-' >> /root/autorestartCrashedApp
-chmod +x /root/autorestartCrashedApp
+done' >> /root/autorestartCrashedApp
+sudo chmod +x /root/autorestartCrashedApp
+sudo chown root /root/autorestartCrashedApp
 #crontab -e
-#User has to belong to the "crontab" group
-sudo usermod -aG crontab honeycomb01
-sudo usermod -aG crontab honeycomb02
-sudo usermod -aG crontab honeycomb03
-
-echo '0 * * * * export DISPLAY=:1 && root /root/autorestartCrashedApp' >> /etc/crontab
+echo '0 * * * * root /root/autorestartCrashedApp' >> /etc/crontab
 
 #Done!
 
@@ -438,10 +451,10 @@ sudo make install-config
 wget ftp://ftp.gnu.org/gnu/parallel/parallel-latest.tar.bz2
 tar -jxvf parallel-latest.tar.bz2
 #find  /home -type d -iname "parallel-*"
-dir1=$(find /home -type d -iname "parallel-*" -maxdepth 1 -print | grep 'parallel-*' | head -n1)
-cd $dir1/
+dirtemp=$(find /home -type d -iname "parallel-*" -maxdepth 3 -print | grep 'parallel-*' | head -n 1)
+cd $dirtemp
 ./configure && make
-sudo make install
+make install
 
 #STEP 3: Configuring proxychains and proxies
 #We will define each proxy on each other configuration file, create each proxy for another configuration file 
@@ -499,7 +512,7 @@ proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/app/HitLeap-View
 chmod ugo+x /home/honeycomb01/autoHoneycomb01
 #At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
 #echo '0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autoHoneycomb01' >> /etc/crontab
-sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autoHoneycomb01' /etc/crontab
+sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/./autoHoneycomb01' /etc/crontab
 
 
 #login honeycomb02 user
@@ -513,7 +526,7 @@ proxychains4 -f /etc/honeycomb02.conf /home/honeycomb02/Desktop/kilohits.com-vie
 chmod ugo+x /home/honeycomb02/autoHoneycomb02
 #At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
 #echo '0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autoHoneycomb02' >> /etc/crontab
-sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autoHoneycomb02' /etc/crontab
+sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/./autoHoneycomb02' /etc/crontab
 
 #login honeycomb03 user
 su $USER3
@@ -526,7 +539,7 @@ proxychains4 -f /etc/honeycomb03.conf /home/honeycomb02/Desktop/kilohits.com-vie
 chmod ugo+x /home/honeycomb02/autoHoneycomb03
 #At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
 #echo '0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autoHoneycomb03' >> /etc/crontab
-sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autoHoneycomb03' /etc/crontab
+sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/./autoHoneycomb03' /etc/crontab
 
 
 
@@ -535,7 +548,7 @@ echo "(3/6) eBesucher hang up money tutorial (LXDE + VNC + restarter)"
 #Hang up conditions: VPS memory 512M or more; A European IP VPS
 ##PREPARE VNC Server with multiple users
 #Use cpulimit to limit the use of firefox to prevent stuck
-sudo su
+########################################
 sudo apt-get install cpulimit
 # linux -> cpulimit -> "sudo apt-get install cpulimit " then "cpulimit -p PID -l 10 -v" -> this means limit this pid to 10% if cpu. You can also just use paths or names like "cpulimit -e firefox -l 10 -v".
 # limit firefox use 50% cpu utilization 
@@ -570,15 +583,15 @@ cp -r usr /usr
 # apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886
 # apt-get update
 # apt-get install oracle-java8-installer
+#INSTALL JAVA
 echo "Ubuntu Java Installer (Oracle JDK)"
-sudo add-apt-repository -y ppa:webupd8team/java
-sudo apt-get update
-sudo apt-get install -y python-software-properties debconf-utils
-echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | sudo debconf-set-selections
+sudo apt-get install -y software-properties-common
+sudo add-apt-repository -y ppa:webupd8team/java && apt-get update
+sudo echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | debconf-set-selections
+sudo echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 seen true" | debconf-set-selections
 sudo apt-get install -y oracle-java8-installer
-sudo apt install oracle-java8-set-default
 #select Java version (Optional)
- update-alternatives --config java
+#update-alternatives --config java
 #Open and edit /etc/profile file
 #sudo nano /etc/profile
 sed -i '$ a export JAVA_HOME="/usr/lib/jvm/java-8-oracle/jre/bin/java"' /etc/profile
@@ -598,12 +611,14 @@ source /etc/profile
 #Download restarter
 sudo wget https://www.ebesucher.com/data/restarter-setup-others.v1.2.03.zip
 #sudo apt-get install unzip
-sudo unzip restarter-setup-others.v1.2.03.zip
+sudo unzip restarter-setup-others.v1.2.03.zip -d /home/restarter
+chmod 777 /home/restarter/*
 #Install java and restarter, through the vnc viewer into the desktop, start the terminal interface root terminal enter the following command:
-export DISPLAY=:1 && sudo java -jar restarter.jar
-su - $USER1 -c "export DISPLAY=:2 && java -jar restarter.jar"
-su - $USER2 -c "export DISPLAY=:3 && java -jar restarter.jar"
-su - $USER3 -c "export DISPLAY=:4 && java -jar restarter.jar"
+export LANG="en_US.UTF-8" 
+java -jar /home/restarter/restarter.jar
+su - $USER1 -c "java -jar /home/restarter/restarter.jar"
+su - $USER2 -c "java -jar /home/restarter/restarter.jar"
+su - $USER3 -c "java -jar /home/restarter/restarter.jar"
 #(5)Set the restarter (optional)
 #Start the restarter after the need to set the restarter
 #Enter username and CODE can found in http://www.ebesucher.com/restarter.html 
@@ -633,7 +648,7 @@ su - $USER3 -c "export DISPLAY=:4 && java -jar restarter.jar"
 
 #$USER1
 #Firefox:
-dbus-uuidgen > /var/lib/dbus/machine-id
+su - $USER1 -c "dbus-uuidgen > /var/lib/dbus/machine-id"
 #Auto restart Autosurf Firefox
 echo '#!/bin/bash
 export DISPLAY=:2
@@ -642,11 +657,12 @@ do
         echo "Stop Firefox"
         pgrep firefox && killall -9 firefox
         sleep 5
-        /usr/bin/firefox -private http://10khits.com/surf https://www.websyndic.com/wv3/?p=surf01 http://www.hit4hit.org/user/earn-auto-website-view.php http://klixion.com/surf.php?id=23425 http://twistrix.com/surf3.php?Mc=de09a22d5e6419eb78430ce2dcbead81 https://www.ultraviews.net/Browser/?Username=nnquangminh & > /dev/null 2>&1
+        /usr/bin/firefox -private http://10khits.com/surf https://www.websyndic.com/wv3/?p=surf01 http://www.hit4hit.org/user/earn-auto-website-view.php http://klixion.com/surf.php?id=23425 http://twistrix.com/surf3.php?Mc=de09a22d5e6419eb78430ce2dcbead81 https://www.ultraviews.net/Browser/?Username=nnquangminh > /dev/null 2>&1
         echo "Restart Firefox"
         sleep 300
 done' > /home/honeycomb01/autorestartFirefoxAutosurfUser1.sh
-
+sudo chmod a+x /home/honeycomb01/autorestartFirefoxAutosurfUser1.sh
+sudo chown $USER1 /home/honeycomb01/autorestartFirefoxAutosurfUser1.sh
 #Auto restart Ebesucher Firefox
 echo '#!/bin/sh
 export DISPLAY=:2
@@ -654,27 +670,26 @@ cd ~/
 rm -rf ~/.vnc/*.log /tmp/plugtmp* > /dev/null 2>&1
 killall firefox > /dev/null 2>&1
 killall java > /dev/null 2>&1
-/usr/bin/firefox --new-tab http://www.ebesucher.com/surfbar/nnquangminh & > /dev/null 2>&1
-cpulimit -e firefox -l 50 > /dev/null 2>&1
-/usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
-' >> /home/honeycomb01/autorestartFirefoxEbesucherUser1.sh
+/usr/bin/firefox -private http://www.ebesucher.com/surfbar/nnquangminh > /dev/null 2>&1
+/usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1' > /home/honeycomb01/autorestartFirefoxEbesucherUser1.sh
+#cpulimit -e firefox -l 50 > /dev/null 2>&1
 #Where, http://www.ebesucher.com/surfbar/username in the username to your user name
 #to the script to add executable permissions 
-sudo chmod a+x /home/honeycomb01/autorestartFirefoxAutosurfUser1.sh
 sudo chmod a+x /home/honeycomb01/autorestartFirefoxEbesucherUser1.sh
-#Edit crontab
-# sudo nano /etc/crontab
-#setup once every hour the script 
-# 0 * * * * honeycomb01 /home/honeycomb01/restartFirefoxhoneycomb01.sh
-sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autorestartFirefoxAutosurfUser1.sh' /etc/crontab
-sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autorestartFirefoxEbesucherUser1.sh' /etc/crontab
+sudo chown $USER1 /home/honeycomb01/autorestartFirefoxEbesucherUser1.sh
 #*/3 * * * * [ -z "`ps -ef | grep java | grep -v grep`" ] && nohup bash /root/restart > /dev/null 2>&1 &
 #The command will be 3 minutes to detect whether the process called java process, if not run the restart script. 
 #So that the machine can automatically restart after the accident, if the VPS is running unstable or suspended animation, etc., 
 #can be synchronized with the regular restart to achieve the purpose of automation. 
 #Note that the test conditions are only applicable to you only run a Restarter this instance, if there are other JAVA instance, you can not determine whether the Restarter run!
-#restart cron
-
+# run this crontab entry every 9 minutes
+#sed -i '$ a */9 * * * * /home/honeycomb01/autorestartFirefoxAutosurfUser1.sh' /var/spool/cron/crontabs/$USER1
+#sed -i '$ a */9 * * * * /home/honeycomb01/autorestartFirefoxEbesucherUser1.sh' /var/spool/cron/crontabs/$USER1
+# run this crontab entry every 3 hours
+#sed -i '$ a 0 */3 * * * /home/honeycomb01/autorestartFirefoxEbesucherUser1.sh' /var/spool/cron/crontabs/$USER1
+# run this crontab entry every 9 minutes
+sed -i '$ a */9 * * * * honeycomb01 /home/honeycomb01/autorestartFirefoxAutosurfUser1.sh' /etc/crontab
+sed -i '$ a */9 * * * * honeycomb01 /home/honeycomb01/autorestartFirefoxEbesucherUser1.sh' /etc/crontab
 #Chrome:
 # nano /home/honeycomb01/autorestartChromeEbesucherUser1.sh
 echo '#!/bin/sh
@@ -685,21 +700,23 @@ killall java > /dev/null 2>&1
 killall chrome > /dev/null 2>&1
 /opt/google/chrome/chrome --new-tab http://www.ebesucher.com/surfbar/nnquangminh --no-sandbox  > /dev/null 2>&1
 /usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
-' >> /home/honeycomb01/autorestartChromeEbesucherUser1.sh
-
+' > /home/honeycomb01/autorestartChromeEbesucherUser1.sh
 #Where, http://www.ebesucher.com/surfbar/username in the username to your user name
 #to the script to add executable permissions 
- sudo chmod a+x /home/honeycomb01/autorestartChromeEbesucherUser1.sh
+sudo chmod a+x /home/honeycomb01/autorestartChromeEbesucherUser1.sh
+sudo chown $USER1 /home/honeycomb01/autorestartChromeEbesucherUser1.sh
 #edit cron
 #sudo nano /etc/crontab
 #setup once every hour the script
 # 0 * * * * honeycomb01 ~/autorestartChromeEbesucherUser1.sh
-sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autorestartChromeEbesucherUser1.sh' /etc/crontab
-
+sed -i '$ a */9 * * * * honeycomb01 /home/honeycomb01/autorestartChromeEbesucherUser1.sh' /etc/crontab
+#restart cron
+sudo service cron restart
+#End USER1
 
 #$USER2
 #Firefox:
-dbus-uuidgen > /var/lib/dbus/machine-id
+su - $USER2 -c "dbus-uuidgen > /var/lib/dbus/machine-id"
 #Auto restart Autosurf Firefox
 echo '#!/bin/bash
 export DISPLAY=:3
@@ -708,11 +725,12 @@ do
         echo "Stop Firefox"
         pgrep firefox && killall -9 firefox
         sleep 5
-        /usr/bin/firefox -private http://10khits.com/surf https://www.websyndic.com/wv3/?p=surf01 http://www.hit4hit.org/user/earn-auto-website-view.php http://klixion.com/surf.php?id=23425 http://twistrix.com/surf3.php?Mc=de09a22d5e6419eb78430ce2dcbead81 https://www.ultraviews.net/Browser/?Username=nnquangminh & > /dev/null 2>&1
+        /usr/bin/firefox -private http://10khits.com/surf https://www.websyndic.com/wv3/?p=surf01 http://www.hit4hit.org/user/earn-auto-website-view.php http://klixion.com/surf.php?id=23425 http://twistrix.com/surf3.php?Mc=de09a22d5e6419eb78430ce2dcbead81 https://www.ultraviews.net/Browser/?Username=nnquangminh > /dev/null 2>&1
         echo "Restart Firefox"
         sleep 300
-done' > /home/honeycomb02/autorestartFirefoxAutosurfUser2.sh
-
+done' > /home/honeycomb01/autorestartFirefoxAutosurfUSER2.sh
+sudo chmod a+x /home/honeycomb01/autorestartFirefoxAutosurfUSER2.sh
+sudo chown $USER2 /home/honeycomb01/autorestartFirefoxAutosurfUSER2.sh
 #Auto restart Ebesucher Firefox
 echo '#!/bin/sh
 export DISPLAY=:3
@@ -720,29 +738,28 @@ cd ~/
 rm -rf ~/.vnc/*.log /tmp/plugtmp* > /dev/null 2>&1
 killall firefox > /dev/null 2>&1
 killall java > /dev/null 2>&1
-/usr/bin/firefox --new-tab http://www.ebesucher.com/surfbar/nnquangminh & > /dev/null 2>&1
-cpulimit -e firefox -l 50 > /dev/null 2>&1
-/usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
-' >> /home/honeycomb02/autorestartFirefoxEbesucherUser2.sh
+/usr/bin/firefox -private http://www.ebesucher.com/surfbar/nnquangminh > /dev/null 2>&1
+/usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1' > /home/honeycomb01/autorestartFirefoxEbesucherUSER2.sh
+#cpulimit -e firefox -l 50 > /dev/null 2>&1
 #Where, http://www.ebesucher.com/surfbar/username in the username to your user name
 #to the script to add executable permissions 
-sudo chmod a+x /home/honeycomb02/autorestartFirefoxAutosurfUser2.sh
-sudo chmod a+x /home/honeycomb02/autorestartFirefoxEbesucherUser2.sh
-#Edit crontab
-# sudo nano /etc/crontab
-#setup once every hour the script 
-# 0 * * * * honeycomb02 /home/honeycomb02/restartFirefoxhoneycomb02.sh
-sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autorestartFirefoxAutosurfUser2.sh' /etc/crontab
-sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autorestartFirefoxEbesucherUser2.sh' /etc/crontab
+sudo chmod a+x /home/honeycomb01/autorestartFirefoxEbesucherUSER2.sh
+sudo chown $USER2 /home/honeycomb01/autorestartFirefoxEbesucherUSER2.sh
 #*/3 * * * * [ -z "`ps -ef | grep java | grep -v grep`" ] && nohup bash /root/restart > /dev/null 2>&1 &
 #The command will be 3 minutes to detect whether the process called java process, if not run the restart script. 
 #So that the machine can automatically restart after the accident, if the VPS is running unstable or suspended animation, etc., 
 #can be synchronized with the regular restart to achieve the purpose of automation. 
 #Note that the test conditions are only applicable to you only run a Restarter this instance, if there are other JAVA instance, you can not determine whether the Restarter run!
-#restart cron
-
+# run this crontab entry every 9 minutes
+#sed -i '$ a */9 * * * * /home/honeycomb01/autorestartFirefoxAutosurfUSER2.sh' /var/spool/cron/crontabs/$USER2
+#sed -i '$ a */9 * * * * /home/honeycomb01/autorestartFirefoxEbesucherUSER2.sh' /var/spool/cron/crontabs/$USER2
+# run this crontab entry every 3 hours
+#sed -i '$ a 0 */3 * * * /home/honeycomb01/autorestartFirefoxEbesucherUSER2.sh' /var/spool/cron/crontabs/$USER2
+# run this crontab entry every 9 minutes
+sed -i '$ a */9 * * * * honeycomb01 /home/honeycomb01/autorestartFirefoxAutosurfUSER2.sh' /etc/crontab
+sed -i '$ a */9 * * * * honeycomb01 /home/honeycomb01/autorestartFirefoxEbesucherUSER2.sh' /etc/crontab
 #Chrome:
-# nano /home/honeycomb02/autorestartChromeEbesucherUser2.sh
+# nano /home/honeycomb01/autorestartChromeEbesucherUSER2.sh
 echo '#!/bin/sh
 export DISPLAY=:3
 cd ~/
@@ -751,21 +768,23 @@ killall java > /dev/null 2>&1
 killall chrome > /dev/null 2>&1
 /opt/google/chrome/chrome --new-tab http://www.ebesucher.com/surfbar/nnquangminh --no-sandbox  > /dev/null 2>&1
 /usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
-' >> /home/honeycomb02/autorestartChromeEbesucherUser2.sh
-
+' > /home/honeycomb01/autorestartChromeEbesucherUSER2.sh
 #Where, http://www.ebesucher.com/surfbar/username in the username to your user name
 #to the script to add executable permissions 
- sudo chmod a+x /home/honeycomb02/autorestartChromeEbesucherUser2.sh
+sudo chmod a+x /home/honeycomb01/autorestartChromeEbesucherUSER2.sh
+sudo chown $USER2 /home/honeycomb01/autorestartChromeEbesucherUSER2.sh
 #edit cron
 #sudo nano /etc/crontab
 #setup once every hour the script
-# 0 * * * * honeycomb02 ~/autorestartChromeEbesucherUser2.sh
-sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autorestartChromeEbesucherUser2.sh' /etc/crontab
-
+# 0 * * * * honeycomb01 ~/autorestartChromeEbesucherUSER2.sh
+sed -i '$ a */9 * * * * honeycomb01 /home/honeycomb01/autorestartChromeEbesucherUSER2.sh' /etc/crontab
+#restart cron
+sudo service cron restart
+#End USER2
 
 #$USER3
 #Firefox:
-dbus-uuidgen > /var/lib/dbus/machine-id
+su - $USER3 -c "dbus-uuidgen > /var/lib/dbus/machine-id"
 #Auto restart Autosurf Firefox
 echo '#!/bin/bash
 export DISPLAY=:4
@@ -774,11 +793,12 @@ do
         echo "Stop Firefox"
         pgrep firefox && killall -9 firefox
         sleep 5
-        /usr/bin/firefox -private http://10khits.com/surf https://www.websyndic.com/wv3/?p=surf01 http://www.hit4hit.org/user/earn-auto-website-view.php http://klixion.com/surf.php?id=23425 http://twistrix.com/surf3.php?Mc=de09a22d5e6419eb78430ce2dcbead81 https://www.ultraviews.net/Browser/?Username=nnquangminh & > /dev/null 2>&1
+        /usr/bin/firefox -private http://10khits.com/surf https://www.websyndic.com/wv3/?p=surf01 http://www.hit4hit.org/user/earn-auto-website-view.php http://klixion.com/surf.php?id=23425 http://twistrix.com/surf3.php?Mc=de09a22d5e6419eb78430ce2dcbead81 https://www.ultraviews.net/Browser/?Username=nnquangminh > /dev/null 2>&1
         echo "Restart Firefox"
         sleep 300
-done' > /home/honeycomb03/autorestartFirefoxAutosurfUser3.sh
-
+done' > /home/honeycomb01/autorestartFirefoxAutosurfUSER3.sh
+sudo chmod a+x /home/honeycomb01/autorestartFirefoxAutosurfUSER3.sh
+sudo chown $USER3 /home/honeycomb01/autorestartFirefoxAutosurfUSER3.sh
 #Auto restart Ebesucher Firefox
 echo '#!/bin/sh
 export DISPLAY=:4
@@ -786,29 +806,28 @@ cd ~/
 rm -rf ~/.vnc/*.log /tmp/plugtmp* > /dev/null 2>&1
 killall firefox > /dev/null 2>&1
 killall java > /dev/null 2>&1
-/usr/bin/firefox --new-tab http://www.ebesucher.com/surfbar/nnquangminh & > /dev/null 2>&1
-cpulimit -e firefox -l 50 > /dev/null 2>&1
-/usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
-' >> /home/honeycomb03/autorestartFirefoxEbesucherUser3.sh
+/usr/bin/firefox -private http://www.ebesucher.com/surfbar/nnquangminh > /dev/null 2>&1
+/usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1' > /home/honeycomb01/autorestartFirefoxEbesucherUSER3.sh
+#cpulimit -e firefox -l 50 > /dev/null 2>&1
 #Where, http://www.ebesucher.com/surfbar/username in the username to your user name
 #to the script to add executable permissions 
-sudo chmod a+x /home/honeycomb03/autorestartFirefoxAutosurfUser3.sh
-sudo chmod a+x /home/honeycomb03/autorestartFirefoxEbesucherUser3.sh
-#Edit crontab
-# sudo nano /etc/crontab
-#setup once every hour the script 
-# 0 * * * * honeycomb03 /home/honeycomb03/restartFirefoxhoneycomb03.sh
-sed -i '$ a 0 * * * * export DISPLAY=:4 && honeycomb03 /home/honeycomb03/autorestartFirefoxAutosurfUser3.sh' /etc/crontab
-sed -i '$ a 0 * * * * export DISPLAY=:4 && honeycomb03 /home/honeycomb03/autorestartFirefoxEbesucherUser3.sh' /etc/crontab
+sudo chmod a+x /home/honeycomb01/autorestartFirefoxEbesucherUSER3.sh
+sudo chown $USER3 /home/honeycomb01/autorestartFirefoxEbesucherUSER3.sh
 #*/3 * * * * [ -z "`ps -ef | grep java | grep -v grep`" ] && nohup bash /root/restart > /dev/null 2>&1 &
 #The command will be 3 minutes to detect whether the process called java process, if not run the restart script. 
 #So that the machine can automatically restart after the accident, if the VPS is running unstable or suspended animation, etc., 
 #can be synchronized with the regular restart to achieve the purpose of automation. 
 #Note that the test conditions are only applicable to you only run a Restarter this instance, if there are other JAVA instance, you can not determine whether the Restarter run!
-#restart cron
-
+# run this crontab entry every 9 minutes
+#sed -i '$ a */9 * * * * /home/honeycomb01/autorestartFirefoxAutosurfUSER3.sh' /var/spool/cron/crontabs/$USER3
+#sed -i '$ a */9 * * * * /home/honeycomb01/autorestartFirefoxEbesucherUSER3.sh' /var/spool/cron/crontabs/$USER3
+# run this crontab entry every 3 hours
+#sed -i '$ a 0 */3 * * * /home/honeycomb01/autorestartFirefoxEbesucherUSER3.sh' /var/spool/cron/crontabs/$USER3
+# run this crontab entry every 9 minutes
+sed -i '$ a */9 * * * * honeycomb01 /home/honeycomb01/autorestartFirefoxAutosurfUSER3.sh' /etc/crontab
+sed -i '$ a */9 * * * * honeycomb01 /home/honeycomb01/autorestartFirefoxEbesucherUSER3.sh' /etc/crontab
 #Chrome:
-# nano /home/honeycomb03/autorestartChromeEbesucherUser3.sh
+# nano /home/honeycomb01/autorestartChromeEbesucherUSER3.sh
 echo '#!/bin/sh
 export DISPLAY=:4
 cd ~/
@@ -817,33 +836,20 @@ killall java > /dev/null 2>&1
 killall chrome > /dev/null 2>&1
 /opt/google/chrome/chrome --new-tab http://www.ebesucher.com/surfbar/nnquangminh --no-sandbox  > /dev/null 2>&1
 /usr/bin/java -jar ~/restarter.jar > /dev/null 2>&1
-' >> /home/honeycomb03/autorestartChromeEbesucherUser3.sh
-
+' > /home/honeycomb01/autorestartChromeEbesucherUSER3.sh
 #Where, http://www.ebesucher.com/surfbar/username in the username to your user name
 #to the script to add executable permissions 
- sudo chmod a+x /home/honeycomb03/autorestartChromeEbesucherUser3.sh
+sudo chmod a+x /home/honeycomb01/autorestartChromeEbesucherUSER3.sh
+sudo chown $USER3 /home/honeycomb01/autorestartChromeEbesucherUSER3.sh
 #edit cron
 #sudo nano /etc/crontab
 #setup once every hour the script
-# 0 * * * * honeycomb03 ~/autorestartChromeEbesucherUser3.sh
-sed -i '$ a 0 * * * * export DISPLAY=:4 && honeycomb03 /home/honeycomb03/autorestartChromeEbesucherUser3.sh' /etc/crontab
-
-
+# 0 * * * * honeycomb01 ~/autorestartChromeEbesucherUSER3.sh
+sed -i '$ a */9 * * * * honeycomb01 /home/honeycomb01/autorestartChromeEbesucherUSER3.sh' /etc/crontab
 #restart cron
 sudo service cron restart
+#End USER3
 
-#Another way for restart Firefox:
-#dbus-uuidgen > /var/lib/dbus/machine-id
-#echo '#!/bin/bash
-#while [ 1 ]
-#do
-#       echo "Stop Firefox"
-#        pgrep firefox && killall -9 firefox
-#        sleep 5
-#        firefox --display=localhost:1.0 --new-tab http://www.ebesucher.com/surfbar/nnquangminh & >/dev/null 2>&1
-#        echo "Restart Firefox"
-#		sleep 300
-#done' > autorestartFirefox.sh 
 
 echo "(4/6) Install a StorJshare miner"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -855,7 +861,7 @@ echo "(4/6) Install a StorJshare miner"
 #sudo rm -rf /usr/local/lib/node*
 #sudo rm -rf /usr/local/include/node*
 #sudo rm -rf /usr/local/bin/node*
-sudo su
+########################################
 cd /home/
 sudo apt-get install -y build-essential curl git m4 ruby texinfo libbz2-dev libcurl4-openssl-dev libexpat-dev libncurses-dev zlib1g-dev
 sudo curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
@@ -890,7 +896,7 @@ sudo mkdir /storj
 echo '#!/usr/bin/expect -f
 set timeout -1
 spawn sudo storjshare-create --storj 0xAF99AaBBD2fF63C3cb6855E5BE87F243b7f88D09 --storage /storj --size 5GB
-send ":wq\r"
+send ":wq\r\n"
 expect off' > configStorj.sh
 chmod 777 configStorj.sh
 ./configStorj.sh
@@ -936,7 +942,7 @@ echo '#!/bin/bash
  ' > /root/.config/storjshare/storjdaemon
 
 chmod uga+x /root/.config/storjshare/storjdaemon
-sed -i '$ a 0 * * * * export DISPLAY=:1 && root /root/.config/storjshare/storjdaemon' /etc/crontab
+sed -i '$ a @reboot root /root/.config/storjshare/storjdaemon' /etc/crontab
 #At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
 #restart cron
 sudo service cron restart
@@ -944,80 +950,411 @@ sudo service cron restart
 #Done!
 
 
-
-echo "(5/6) Set Up a Node.js Application for Production"
+echo "(5/6) Set Up Web Server Application for Production"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#How to install a StorJ miner on Ubuntu via Command Line
-#----------------------------------------------------------------------------------------------------------------------------------------
-#Download and setup the APT repository add the PGP key to the system’s APT keychain,
-sudo su
-cd /home/
-sudo apt-get install -y python-software-properties
-curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
-#Running apt-get to Install Node.js
-sudo apt-get install -y nodejs
-sudo apt-get install build-essential -y
-sudo apt-get update
-#Finally, Update Your Version of npm
-sudo apt-get install build-essential libssl-dev
-sudo npm install npm --global
-#Install Nginx
-sudo systemctl enable nginx
-sudo systemctl start nginx 
-#Set Up Nginx as a Reverse Proxy Server
+# =================== WEB SERVER DATA ========================
+
+SERVER_NAME="Univerchain"
+SERVER_IP=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+
+USER="dragonball"
+SUDO_PASSWORD="greatway@123"
+MYSQL_ROOT_PASSWORD="bestway@123"
+
+# SSH access via password will be disabled. Use keys instead.
+PUBLIC_SSH_KEYS="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC6tFAz2cweXLFl95dLZWhhrsFODUm0Ic1l36B9IEZmkh43XKHzVWF6fiPsXmENv66ZUs+LJcgLNg34CDEfJ4+KBI6L8guAxc4nel30GSg7fo1NdtzedcbK+YVhSwtMi/Bv9jhXlBNvnSAC3lCtFzejb7lQTPqvf5ufgyTETeTkZdylsqHXD/5wug6nrYs0bNoSZc7LC/p7lmu50MckI8+aIwDjRjqRdayUUcvC8A9KQGWg79LwtE5SllugbdgH2jcyIZFj4hpkZegwXkVsaM+yu9T/oGhRXxXbZORYssdCOOD0M4oQofbrelm9fbRmHzSFtKQqxzQreMPgOSec4VLT bigbee"
+
+# if vps not contains swap file - create it
+SWAP_SIZE="1G"
+
+TIMEZONE="Etc/GMT+0" # lits of avaiable timezones: ls -R --group-directories-first /usr/share/zoneinfo
+
+# =================== LET'S GET STARTED ==========================================================================================
+
+# Prefer IPv4 over IPv6 - make apt-get faster
+
+sudo sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /etc/gai.conf
+
+# Required Packages
+apt-get -y install python-software-properties libssl-dev git-core pkg-config build-essential curl gcc g++ openssl libreadline6 libreadline6-dev zlib1g zlib1g-dev libyaml-dev libsqlite3-0 libsqlite3-dev sqlite3 libxml2-dev libxslt-dev autoconf libc6-dev ncurses-dev automake libtool bison subversion traceroute
+
+# Upgrade The Base Packages
+apt-get update
+apt-get upgrade -y
+
+# Add A Few PPAs To Stay Current
+
+apt-get install -y --force-yes software-properties-common
+
+apt-add-repository ppa:nginx/development -y
+apt-add-repository ppa:chris-lea/redis-server -y
+apt-add-repository ppa:ondrej/apache2 -y
+apt-add-repository ppa:ondrej/php -y
+
+# Update Package Lists
+
+apt-get update
+
+# Base Packages
+
+apt-get install -y --force-yes fail2ban libmcrypt4 libpcre3-dev \
+make python2.7 python-pip supervisor ufw unattended-upgrades unzip whois zsh mc p7zip-full htop
+
+# Install Python Httpie
+
+pip install httpie
+
+# Disable Password Authentication Over SSH
+
+sed -i "/PasswordAuthentication yes/d" /etc/ssh/sshd_config
+echo "" | sudo tee -a /etc/ssh/sshd_config
+echo "" | sudo tee -a /etc/ssh/sshd_config
+echo "PasswordAuthentication no" | sudo tee -a /etc/ssh/sshd_config
+
+# Restart SSH
+
+ssh-keygen -A
+service ssh restart
+
+# Set The Hostname If Necessary
+
+echo "$SERVER_NAME" > /etc/hostname
+sed -i "s/127\.0\.0\.1.*localhost/127.0.0.1 $SERVER_NAME localhost/" /etc/hosts
+hostname $SERVER_NAME
+
+# Set The Timezone
+
+ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+
+# Create The Root SSH Directory If Necessary
+
+if [ ! -d /root/.ssh ]
+then
+    mkdir -p /root/.ssh
+    touch /root/.ssh/authorized_keys
+fi
+
+# Setup User
+
+useradd $USER
+mkdir -p /home/$USER/.ssh
+adduser $USER sudo
+
+# Setup Bash For User
+
+chsh -s /bin/bash $USER
+cp /root/.profile /home/$USER/.profile
+cp /root/.bashrc /home/$USER/.bashrc
+
+# Set The Sudo Password For User
+
+PASSWORD=$(mkpasswd $SUDO_PASSWORD)
+usermod --password $PASSWORD $USER
+
+# Build Formatted Keys & Copy Keys To User
+
+cat > /root/.ssh/authorized_keys << EOF
+$PUBLIC_SSH_KEYS
+EOF
+
+cp /root/.ssh/authorized_keys /home/$USER/.ssh/authorized_keys
+
+# Create The Server SSH Key
+
+ssh-keygen -f /home/$USER/.ssh/id_rsa -t rsa -N ''
+
+# Copy Github And Bitbucket Public Keys Into Known Hosts File
+
+ssh-keyscan -H github.com >> /home/$USER/.ssh/known_hosts
+ssh-keyscan -H bitbucket.org >> /home/$USER/.ssh/known_hosts
+
+# Setup Site Directory Permissions
+
+chown -R $USER:$USER /home/$USER
+chmod -R 755 /home/$USER
+chmod 700 /home/$USER/.ssh/id_rsa
+
+# Setup Unattended Security Upgrades
+
+cat > /etc/apt/apt.conf.d/50unattended-upgrades << EOF
+Unattended-Upgrade::Allowed-Origins {
+    "Ubuntu xenial-security";
+};
+Unattended-Upgrade::Package-Blacklist {
+    //
+};
+EOF
+
+cat > /etc/apt/apt.conf.d/10periodic << EOF
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Unattended-Upgrade "1";
+EOF
+
+# Setup UFW Firewall
+
+ufw allow 22
+ufw allow 80
+ufw allow 443
+ufw --force enable
+
+# Allow FPM Restart
+
+echo "$USER ALL=NOPASSWD: /usr/sbin/service php7.0-fpm reload" > /etc/sudoers.d/php-fpm
+
+# Configure Supervisor Autostart
+
+systemctl enable supervisor.service
+service supervisor start
+
+# Configure Swap Disk
+
+if [ -f /swapfile ]; then
+    echo "Swap exists."
+else
+    fallocate -l $SWAP_SIZE /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    echo "/swapfile none swap sw 0 0" >> /etc/fstab
+    echo "vm.swappiness=30" >> /etc/sysctl.conf
+    echo "vm.vfs_cache_pressure=50" >> /etc/sysctl.conf
+fi
+
+# Install Base PHP Packages
+
+apt-get install -y --force-yes php7.0-cli php7.0-dev \
+php-sqlite3 php-gd \
+php-curl php7.0-dev \
+php-imap php-mysql php-memcached php-mcrypt php-mbstring \
+php-xml php-imagick php7.0-zip php7.0-bcmath php-soap \
+php7.0-intl php7.0-readline
+
+# Install Composer Package Manager
+
+curl -sS https://getcomposer.org/installer | php
+mv composer.phar /usr/local/bin/composer
+
+# Misc. PHP CLI Configuration
+
+sudo sed -i "s/error_reporting = .*/error_reporting = E_ALL/" /etc/php/7.0/cli/php.ini
+sudo sed -i "s/display_errors = .*/display_errors = On/" /etc/php/7.0/cli/php.ini
+sudo sed -i "s/memory_limit = .*/memory_limit = 512M/" /etc/php/7.0/cli/php.ini
+sudo sed -i "s/;date.timezone.*/date.timezone = UTC/" /etc/php/7.0/cli/php.ini
+
+# Configure Sessions Directory Permissions
+
+chmod 733 /var/lib/php/sessions
+chmod +t /var/lib/php/sessions
+
+# Install Nginx & PHP-FPM
+
+apt-get install -y --force-yes nginx php7.0-fpm
+
+# Generate dhparam File
+
+openssl dhparam -out /etc/nginx/dhparams.pem 2048
+
+# Disable The Default Nginx Site
+
+rm /etc/nginx/sites-enabled/default
+rm /etc/nginx/sites-available/default
+service nginx restart
+
+# Tweak Some PHP-FPM Settings
+
+sed -i "s/error_reporting = .*/error_reporting = E_ALL/" /etc/php/7.0/fpm/php.ini
+sed -i "s/display_errors = .*/display_errors = On/" /etc/php/7.0/fpm/php.ini
+sed -i "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
+sed -i "s/memory_limit = .*/memory_limit = 512M/" /etc/php/7.0/fpm/php.ini
+sed -i "s/;date.timezone.*/date.timezone = UTC/" /etc/php/7.0/fpm/php.ini
+sed -i "s/short_open_tag.*/short_open_tag = On/" /etc/php/7.0/fpm/php.ini
+
+# Setup Session Save Path
+
+sed -i "s/\;session.save_path = .*/session.save_path = \"\/var\/lib\/php5\/sessions\"/" /etc/php/7.0/fpm/php.ini
+sed -i "s/php5\/sessions/php\/sessions/" /etc/php/7.0/fpm/php.ini
+
+# Configure Nginx & PHP-FPM To Run As User
+
+sed -i "s/user www-data;/user $USER;/" /etc/nginx/nginx.conf
+sed -i "s/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/" /etc/nginx/nginx.conf
+sed -i "s/^user = www-data/user = $USER/" /etc/php/7.0/fpm/pool.d/www.conf
+sed -i "s/^group = www-data/group = $USER/" /etc/php/7.0/fpm/pool.d/www.conf
+sed -i "s/;listen\.owner.*/listen.owner = $USER/" /etc/php/7.0/fpm/pool.d/www.conf
+sed -i "s/;listen\.group.*/listen.group = $USER/" /etc/php/7.0/fpm/pool.d/www.conf
+sed -i "s/;listen\.mode.*/listen.mode = 0666/" /etc/php/7.0/fpm/pool.d/www.conf
+
+# Configure A Few More Server Things
+
+sed -i "s/;request_terminate_timeout.*/request_terminate_timeout = 60/" /etc/php/7.0/fpm/pool.d/www.conf
+sed -i "s/worker_processes.*/worker_processes auto;/" /etc/nginx/nginx.conf
+sed -i "s/# multi_accept.*/multi_accept on;/" /etc/nginx/nginx.conf
+
+# Install A Catch All Server
+
+cat > /etc/nginx/sites-available/catch-all << EOF
+server {
+    return 404;
+}
+EOF
+
+ln -s /etc/nginx/sites-available/catch-all /etc/nginx/sites-enabled/catch-all
+
 cat > /etc/nginx/sites-available/default << EOF
 server {
     listen 80;
-        server_name pitvietnam.com;
-        access_log /var/log/nginx/pitvietnam.log; 
+    listen [::]:80 default_server ipv6only=on;
+    server_name univerchain.org;
+    root /var/www/html/php;
+
+    index index.html index.htm index.php;
+
+    charset utf-8;
+
     location / {
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-NginX-Proxy true;
-    proxy_pass http://localhost:8080;
-    proxy_set_header Host $http_host;
-    proxy_cache_bypass $http_upgrade;
-    proxy_redirect off;
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    access_log off;
+    error_log  /var/log/nginx/univerchain.org-error.log error;
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+server {
+    listen 80;
+    listen [::]:80 ipv6only=on;
+    server_name pitvietnam.com;
+    
+    root /var/www/html/node;
+    index index.html index.htm;
+
+    client_max_body_size 10G;
+    
+    access_log /var/log/nginx/pitvietnam.log; 
+    
+    location / {
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-NginX-Proxy true;
+      proxy_pass http://localhost:8080;
+      proxy_set_header Host $http_host;
+      proxy_cache_bypass $http_upgrade;
+      proxy_redirect off;
+    }
 }
 EOF
-chmod ug+rwx /etc/nginx/sites-available/default
-#Replace the contents of that block with the following configuration:
-#Make sure you didn't introduce any syntax errors by typing:
-sudo nginx -t
-sudo systemctl restart nginx
-#or reload Nginx: sudo /etc/init.d/nginx reload
-#Adjust the Firewall
-sudo ufw app list
-sudo ufw allow 'Nginx HTTP'
-sudo ufw status
-#Check status of Nginx and start it using the following commands
-# sudo systemctl status nginx    # To check the status of nginx
-#enable nginx service to start up at boot 
-sudo systemctl enable nginx
-#However, in order to keep the npm start - localhost with port 3000 or 8080 server always alive, use pm2:
-sudo npm install pm2 -g
-#Then, change directory (cd) to webapp folder: (assume that using npm start for starting nodejs app)
-pm2 start npm -- start
-#start pm2 when reboot 
-pm2 startup systemd 
-#Run this command to run your application as a service by typing the following:
-sudo env PATH=$PATH:/usr/local/bin pm2 startup -u root
-pm2 save
-#Useful pm2 commands:
-#pm2 list all
-#pm2 stop all
-#pm2 start all
-#pm2 delete 0
-#(use delete 0 to delete the first command from pm2 list with ID 0) 
-#(if using kind of npm run:start to start app, then it should be: pm2 start npm -- run:start)
-#After that, this command will be remembered by pm2! 
-#redirect all visitors to HTTPS/SSL in Cloudflare
-#Using page rules
-#For example:
-# http://example.com/*
- #redirected with a 301 response code to
-# https://www.example.com/$1
 
+# Restart Nginx & PHP-FPM Services
+
+if [ ! -z "\$(ps aux | grep php-fpm | grep -v grep)" ]
+then
+    service php7.0-fpm restart
+fi
+
+service nginx restart
+service nginx reload
+
+# Add User To www-data Group
+
+usermod -a -G www-data $USER
+id $USER
+groups $USER
+
+# Install Node.js
+
+curl --silent --location https://deb.nodesource.com/setup_5.x | bash -
+
+apt-get update
+
+sudo apt-get install -y --force-yes nodejs
+
+npm install -g pm2
+npm install -g gulp
+
+# Set The Automated Root Password
+
+export DEBIAN_FRONTEND=noninteractive
+
+debconf-set-selections <<< "mysql-community-server mysql-community-server/data-dir select ''"
+debconf-set-selections <<< "mysql-community-server mysql-community-server/root-pass password $MYSQL_ROOT_PASSWORD"
+debconf-set-selections <<< "mysql-community-server mysql-community-server/re-root-pass password $MYSQL_ROOT_PASSWORD"
+
+# Install MySQL
+
+apt-get install -y mysql-server
+
+# Configure Password Expiration
+
+echo "default_password_lifetime = 0" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+
+# Configure Access Permissions For Root & User
+
+sed -i '/^bind-address/s/bind-address.*=.*/bind-address = */' /etc/mysql/mysql.conf.d/mysqld.cnf
+mysql --user="root" --password="$MYSQL_ROOT_PASSWORD" -e "GRANT ALL ON *.* TO root@'$SERVER_IP' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
+mysql --user="root" --password="$MYSQL_ROOT_PASSWORD" -e "GRANT ALL ON *.* TO root@'%' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
+service mysql restart
+
+mysql --user="root" --password="$MYSQL_ROOT_PASSWORD" -e "CREATE USER '$USER'@'$SERVER_IP' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
+mysql --user="root" --password="$MYSQL_ROOT_PASSWORD" -e "GRANT ALL ON *.* TO '$USER'@'$SERVER_IP' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD' WITH GRANT OPTION;"
+mysql --user="root" --password="$MYSQL_ROOT_PASSWORD" -e "GRANT ALL ON *.* TO '$USER'@'%' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD' WITH GRANT OPTION;"
+mysql --user="root" --password="$MYSQL_ROOT_PASSWORD" -e "FLUSH PRIVILEGES;"
+
+# MongoDB
+# add mongodb 10gen package to /etc/apt/sources.list.d
+touch /etc/apt/sources.list.d/mongo.list
+echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" > /etc/apt/sources.list.d/mongo.list
+# 10gen package required GPG key, imports it
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10
+# update your apt-get list
+sudo apt-get update
+# install mongodb-10gen
+sudo apt-get install mongodb-10gen -y
+# starting MongoDB
+sudo service mongodb start
+# stoping MongoDB
+sudo service mongodb stop
+# restarting MongoDB
+sudo service mongodb restart
+
+#Install bower, grunt
+
+npm install -g bower
+npm install -g grunt-cli
+
+# Install & Configure Redis Server
+
+apt-get install -y redis-server
+sed -i 's/bind 127.0.0.1/bind 0.0.0.0/' /etc/redis/redis.conf
+service redis-server restart
+
+# Install & Configure Memcached
+
+apt-get install -y memcached
+sed -i 's/-l 127.0.0.1/-l 0.0.0.0/' /etc/memcached.conf
+service memcached restart
+
+# Install & Configure Beanstalk
+
+apt-get install -y --force-yes beanstalkd
+sed -i "s/BEANSTALKD_LISTEN_ADDR.*/BEANSTALKD_LISTEN_ADDR=0.0.0.0/" /etc/default/beanstalkd
+sed -i "s/#START=yes/START=yes/" /etc/default/beanstalkd
+/etc/init.d/beanstalkd start
 
 
 echo "(6/6) Add DRAGONBALL aliases"
@@ -1031,6 +1368,10 @@ echo "alias glog='pm2 logs'" >> ~/.bashrc
 echo "alias gstart='pm2 start'" >> ~/.bashrc
 echo "alias gstop='pm2 stop'" >> ~/.bashrc
 echo ""
+# Finishing Up
+apt-get -y autoremove
+apt-get -y clean
+apt-get -y autoclean
 echo " ============================================================"
 echo "                   DRAGONBALL SETUP complete!"
 echo ""
