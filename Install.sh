@@ -14,17 +14,261 @@ echo ""
 echo " ============================================================"
 echo ""
 # ============================ LETS MAGIC BEGINS =========================================================================================
+# === WEB SERVER DATA ===
+SERVER_NAME="Univerchain"
+SERVER_IP=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
 
-echo "(1/6) Update the base system & Install traffic exchange apps..."
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Install some traffic exchange script on VPS ubuntu 16.04.
-#- hitleap.com
-#- kilohits.com
-#- websyndic.com (Browser)
-#- otohits.net (Need memory more than 1GB)
-#Requirement
-#- SSH client (port forwarding need) or Putty
-#- VNC client
+USER1='honeycomb01'
+USER2='honeycomb02'
+USER3='honeycomb03'
+SUDO_PASSWORD="greatway@123"
+MYSQL_ROOT_PASSWORD="bestway@123"
+
+# SSH access via password will be disabled. Use keys instead.
+PUBLIC_SSH_KEYS="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC6tFAz2cweXLFl95dLZWhhrsFODUm0Ic1l36B9IEZmkh43XKHzVWF6fiPsXmENv66ZUs+LJcgLNg34CDEfJ4+KBI6L8guAxc4nel30GSg7fo1NdtzedcbK+YVhSwtMi/Bv9jhXlBNvnSAC3lCtFzejb7lQTPqvf5ufgyTETeTkZdylsqHXD/5wug6nrYs0bNoSZc7LC/p7lmu50MckI8+aIwDjRjqRdayUUcvC8A9KQGWg79LwtE5SllugbdgH2jcyIZFj4hpkZegwXkVsaM+yu9T/oGhRXxXbZORYssdCOOD0M4oQofbrelm9fbRmHzSFtKQqxzQreMPgOSec4VLT bigbee"
+
+# if vps not contains swap file - create it
+SWAP_SIZE="1G"
+
+TIMEZONE="Etc/GMT+0" # lits of avaiable timezones: ls -R --group-directories-first /usr/share/zoneinfo
+
+# =================== SETUP VPS  ===================================================================
+
+# Prefer IPv4 over IPv6 - make apt-get faster
+
+sudo sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /etc/gai.conf
+
+# Upgrade The Base Packages
+apt-get update
+apt-get upgrade -y
+
+# Add A Few PPAs To Stay Current
+
+apt-get install -y --force-yes software-properties-common
+
+apt-add-repository ppa:nginx/development -y
+apt-add-repository ppa:chris-lea/redis-server -y
+apt-add-repository ppa:ondrej/apache2 -y
+apt-add-repository ppa:ondrej/php -y
+
+# Update Package Lists
+
+apt-get update
+
+# Base Packages
+
+apt-get install -y --force-yes build-essential curl fail2ban gcc git libmcrypt4 libpcre3-dev \
+make python2.7 python-pip supervisor ufw unattended-upgrades unzip whois zsh mc p7zip-full htop
+
+# Install Python Httpie
+
+pip install httpie
+
+# Disable Password Authentication Over SSH
+
+sed -i "/PasswordAuthentication yes/d" /etc/ssh/sshd_config
+echo "" | sudo tee -a /etc/ssh/sshd_config
+echo "" | sudo tee -a /etc/ssh/sshd_config
+echo "PasswordAuthentication no" | sudo tee -a /etc/ssh/sshd_config
+
+# Restart SSH
+
+ssh-keygen -A
+service ssh restart
+
+# Set The Hostname If Necessary
+
+echo "$SERVER_NAME" > /etc/hostname
+sed -i "s/127\.0\.0\.1.*localhost/127.0.0.1 $SERVER_NAME localhost/" /etc/hosts
+hostname $SERVER_NAME
+
+# Set The Timezone
+
+ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+
+# Create The Root SSH Directory If Necessary
+
+if [ ! -d /root/.ssh ]
+then
+    mkdir -p /root/.ssh
+    touch /root/.ssh/authorized_keys
+fi
+
+# Setup USER1
+#sudo adduser honeycomb01
+sudo useradd -m -c "honeycomb01" $USER1 -s /bin/bash -d /home/$USER1
+sudo usermod -aG sudo $USER1
+mkdir -p /home/$USER1/.ssh
+
+# Setup Bash For User
+
+chsh -s /bin/bash $USER1
+cp /root/.profile /home/$USER1/.profile
+cp /root/.bashrc /home/$USER1/.bashrc
+
+# Set The Sudo Password For User
+
+PASSWORD=$(mkpasswd $SUDO_PASSWORD)
+usermod --password $PASSWORD $USER1
+
+# Build Formatted Keys & Copy Keys To User
+
+cat > /root/.ssh/authorized_keys << EOF
+$PUBLIC_SSH_KEYS
+EOF
+
+cp /root/.ssh/authorized_keys /home/$USER1/.ssh/authorized_keys
+
+# Create The Server SSH Key
+
+ssh-keygen -f /home/$USER1/.ssh/id_rsa -t rsa -N ''
+
+# Copy Github And Bitbucket Public Keys Into Known Hosts File
+
+ssh-keyscan -H github.com >> /home/$USER1/.ssh/known_hosts
+ssh-keyscan -H bitbucket.org >> /home/$USER1/.ssh/known_hosts
+
+# Setup Site Directory Permissions
+
+chown -R $USER1:$USER1 /home/$USER1
+chmod -R 755 /home/$USER1
+chmod 600 /home/$USER1/.ssh/id_rsa
+
+echo 'honeycomb01 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+# Setup USER2
+#sudo adduser honeycomb02
+sudo useradd -m -c "honeycomb02" $USER2 -s /bin/bash -d /home/$USER2
+sudo usermod -aG sudo $USER2
+mkdir -p /home/$USER2/.ssh
+
+# Setup Bash For User
+
+chsh -s /bin/bash $USER2
+cp /root/.profile /home/$USER2/.profile
+cp /root/.bashrc /home/$USER2/.bashrc
+
+# Set The Sudo Password For User
+
+PASSWORD=$(mkpasswd $SUDO_PASSWORD)
+usermod --password $PASSWORD $USER2
+
+# Build Formatted Keys & Copy Keys To User
+
+cat > /root/.ssh/authorized_keys << EOF
+$PUBLIC_SSH_KEYS
+EOF
+
+cp /root/.ssh/authorized_keys /home/$USER2/.ssh/authorized_keys
+
+# Create The Server SSH Key
+
+ssh-keygen -f /home/$USER2/.ssh/id_rsa -t rsa -N ''
+
+# Copy Github And Bitbucket Public Keys Into Known Hosts File
+
+#ssh-keyscan -H github.com >> /home/$USER2/.ssh/known_hosts
+#ssh-keyscan -H bitbucket.org >> /home/$USER2/.ssh/known_hosts
+
+# Setup Site Directory Permissions
+
+chown -R $USER2:$USER2 /home/$USER2
+chmod -R 755 /home/$USER2
+chmod 600 /home/$USER2/.ssh/id_rsa
+
+echo 'honeycomb02 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+# Setup USER3
+#sudo adduser honeycomb03
+sudo useradd -m -c "honeycomb03" $USER3 -s /bin/bash -d /home/$USER3
+sudo usermod -aG sudo $USER3
+mkdir -p /home/$USER3/.ssh
+
+# Setup Bash For User
+
+chsh -s /bin/bash $USER3
+cp /root/.profile /home/$USER3/.profile
+cp /root/.bashrc /home/$USER3/.bashrc
+
+# Set The Sudo Password For User
+
+PASSWORD=$(mkpasswd $SUDO_PASSWORD)
+usermod --password $PASSWORD $USER3
+
+# Build Formatted Keys & Copy Keys To User
+
+cat > /root/.ssh/authorized_keys << EOF
+$PUBLIC_SSH_KEYS
+EOF
+
+cp /root/.ssh/authorized_keys /home/$USER3/.ssh/authorized_keys
+
+# Create The Server SSH Key
+
+ssh-keygen -f /home/$USER3/.ssh/id_rsa -t rsa -N ''
+
+# Copy Github And Bitbucket Public Keys Into Known Hosts File
+
+#ssh-keyscan -H github.com >> /home/$USER3/.ssh/known_hosts
+#ssh-keyscan -H bitbucket.org >> /home/$USER3/.ssh/known_hosts
+
+# Setup Site Directory Permissions
+
+chown -R $USER3:$USER3 /home/$USER3
+chmod -R 755 /home/$USER3
+chmod 600 /home/$USER3/.ssh/id_rsa
+
+echo 'honeycomb03 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+
+# Setup Unattended Security Upgrades
+
+cat > /etc/apt/apt.conf.d/50unattended-upgrades << EOF
+Unattended-Upgrade::Allowed-Origins {
+    "Ubuntu xenial-security";
+};
+Unattended-Upgrade::Package-Blacklist {
+    //
+};
+EOF
+
+cat > /etc/apt/apt.conf.d/10periodic << EOF
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Unattended-Upgrade "1";
+EOF
+
+# Setup UFW Firewall
+
+ufw allow 22
+ufw allow 80
+ufw allow 443
+ufw --force enable
+
+# Allow FPM Restart
+
+echo "$USER ALL=NOPASSWD: /usr/sbin/service php7.0-fpm reload" > /etc/sudoers.d/php-fpm
+
+# Configure Supervisor Autostart
+
+systemctl enable supervisor.service
+service supervisor start
+
+# Configure Swap Disk
+
+if [ -f /swapfile ]; then
+    echo "Swap exists."
+else
+    fallocate -l $SWAP_SIZE /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    echo "/swapfile none swap sw 0 0" >> /etc/fstab
+    echo "vm.swappiness=30" >> /etc/sysctl.conf
+    echo "vm.vfs_cache_pressure=50" >> /etc/sysctl.conf
+fi
+
 sudo su
 cd /home/
 ##PREPARE VNC Server with multiple users
@@ -62,26 +306,7 @@ startxfce4 &
 sudo chmod +x /root/.vnc/xstartup
 sudo vncserver :1
 
-#Add another users
-USER1='honeycomb01'
-#sudo adduser honeycomb01
-sudo useradd -m -c "honeycomb01" honeycomb01 -s /bin/bash -d /home/honeycomb01
-sudo usermod -aG sudo honeycomb01
-echo 'honeycomb01 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
-#Add another users
-USER2='honeycomb02'
-#sudo adduser honeycomb01
-sudo useradd -m -c "honeycomb02" honeycomb02 -s /bin/bash -d /home/honeycomb02
-sudo usermod -aG sudo honeycomb02
-echo 'honeycomb02 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-
-#Add another users
-USER3='honeycomb03'
-#sudo adduser honeycomb01
-sudo useradd -m -c "honeycomb03" honeycomb03 -s /bin/bash -d /home/honeycomb03
-sudo usermod -aG sudo honeycomb03
-echo 'honeycomb03 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 echo '#!/bin/sh
 myuser="root"
@@ -278,6 +503,20 @@ service vncserver start
 #cat ~/.vnc/*.pid
 #ps -ef | grep tightvnc
 #netstat -nlp | grep vnc
+
+
+
+
+echo "(1/6) Update the base system & Install traffic exchange apps..."
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Install some traffic exchange script on VPS ubuntu 16.04.
+#- hitleap.com
+#- kilohits.com
+#- websyndic.com (Browser)
+#- otohits.net (Need memory more than 1GB)
+#Requirement
+#- SSH client (port forwarding need) or Putty
+#- VNC client
 
 #Go to Desktop
 ########################################
@@ -952,176 +1191,7 @@ sudo service cron restart
 
 echo "(5/6) Set Up Web Server Application for Production"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# =================== WEB SERVER DATA ========================
-
-SERVER_NAME="Univerchain"
-SERVER_IP=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
-
-USER="dragonball"
-SUDO_PASSWORD="greatway@123"
-MYSQL_ROOT_PASSWORD="bestway@123"
-
-# SSH access via password will be disabled. Use keys instead.
-PUBLIC_SSH_KEYS="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC6tFAz2cweXLFl95dLZWhhrsFODUm0Ic1l36B9IEZmkh43XKHzVWF6fiPsXmENv66ZUs+LJcgLNg34CDEfJ4+KBI6L8guAxc4nel30GSg7fo1NdtzedcbK+YVhSwtMi/Bv9jhXlBNvnSAC3lCtFzejb7lQTPqvf5ufgyTETeTkZdylsqHXD/5wug6nrYs0bNoSZc7LC/p7lmu50MckI8+aIwDjRjqRdayUUcvC8A9KQGWg79LwtE5SllugbdgH2jcyIZFj4hpkZegwXkVsaM+yu9T/oGhRXxXbZORYssdCOOD0M4oQofbrelm9fbRmHzSFtKQqxzQreMPgOSec4VLT bigbee"
-
-# if vps not contains swap file - create it
-SWAP_SIZE="1G"
-
-TIMEZONE="Etc/GMT+0" # lits of avaiable timezones: ls -R --group-directories-first /usr/share/zoneinfo
-
 # =================== LET'S GET STARTED ==========================================================================================
-
-# Prefer IPv4 over IPv6 - make apt-get faster
-
-sudo sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /etc/gai.conf
-
-# Required Packages
-apt-get -y install python-software-properties libssl-dev git-core pkg-config build-essential curl gcc g++ openssl libreadline6 libreadline6-dev zlib1g zlib1g-dev libyaml-dev libsqlite3-0 libsqlite3-dev sqlite3 libxml2-dev libxslt-dev autoconf libc6-dev ncurses-dev automake libtool bison subversion traceroute
-
-# Upgrade The Base Packages
-apt-get update
-apt-get upgrade -y
-
-# Add A Few PPAs To Stay Current
-
-apt-get install -y --force-yes software-properties-common
-
-apt-add-repository ppa:nginx/development -y
-apt-add-repository ppa:chris-lea/redis-server -y
-apt-add-repository ppa:ondrej/apache2 -y
-apt-add-repository ppa:ondrej/php -y
-
-# Update Package Lists
-
-apt-get update
-
-# Base Packages
-
-apt-get install -y --force-yes fail2ban libmcrypt4 libpcre3-dev \
-make python2.7 python-pip supervisor ufw unattended-upgrades unzip whois zsh mc p7zip-full htop
-
-# Install Python Httpie
-
-pip install httpie
-
-# Disable Password Authentication Over SSH
-
-sed -i "/PasswordAuthentication yes/d" /etc/ssh/sshd_config
-echo "" | sudo tee -a /etc/ssh/sshd_config
-echo "" | sudo tee -a /etc/ssh/sshd_config
-echo "PasswordAuthentication no" | sudo tee -a /etc/ssh/sshd_config
-
-# Restart SSH
-
-ssh-keygen -A
-service ssh restart
-
-# Set The Hostname If Necessary
-
-echo "$SERVER_NAME" > /etc/hostname
-sed -i "s/127\.0\.0\.1.*localhost/127.0.0.1 $SERVER_NAME localhost/" /etc/hosts
-hostname $SERVER_NAME
-
-# Set The Timezone
-
-ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
-
-# Create The Root SSH Directory If Necessary
-
-if [ ! -d /root/.ssh ]
-then
-    mkdir -p /root/.ssh
-    touch /root/.ssh/authorized_keys
-fi
-
-# Setup User
-
-useradd $USER
-mkdir -p /home/$USER/.ssh
-adduser $USER sudo
-
-# Setup Bash For User
-
-chsh -s /bin/bash $USER
-cp /root/.profile /home/$USER/.profile
-cp /root/.bashrc /home/$USER/.bashrc
-
-# Set The Sudo Password For User
-
-PASSWORD=$(mkpasswd $SUDO_PASSWORD)
-usermod --password $PASSWORD $USER
-
-# Build Formatted Keys & Copy Keys To User
-
-cat > /root/.ssh/authorized_keys << EOF
-$PUBLIC_SSH_KEYS
-EOF
-
-cp /root/.ssh/authorized_keys /home/$USER/.ssh/authorized_keys
-
-# Create The Server SSH Key
-
-ssh-keygen -f /home/$USER/.ssh/id_rsa -t rsa -N ''
-
-# Copy Github And Bitbucket Public Keys Into Known Hosts File
-
-ssh-keyscan -H github.com >> /home/$USER/.ssh/known_hosts
-ssh-keyscan -H bitbucket.org >> /home/$USER/.ssh/known_hosts
-
-# Setup Site Directory Permissions
-
-chown -R $USER:$USER /home/$USER
-chmod -R 755 /home/$USER
-chmod 700 /home/$USER/.ssh/id_rsa
-
-# Setup Unattended Security Upgrades
-
-cat > /etc/apt/apt.conf.d/50unattended-upgrades << EOF
-Unattended-Upgrade::Allowed-Origins {
-    "Ubuntu xenial-security";
-};
-Unattended-Upgrade::Package-Blacklist {
-    //
-};
-EOF
-
-cat > /etc/apt/apt.conf.d/10periodic << EOF
-APT::Periodic::Update-Package-Lists "1";
-APT::Periodic::Download-Upgradeable-Packages "1";
-APT::Periodic::AutocleanInterval "7";
-APT::Periodic::Unattended-Upgrade "1";
-EOF
-
-# Setup UFW Firewall
-
-ufw allow 22
-ufw allow 80
-ufw allow 443
-ufw --force enable
-
-# Allow FPM Restart
-
-echo "$USER ALL=NOPASSWD: /usr/sbin/service php7.0-fpm reload" > /etc/sudoers.d/php-fpm
-
-# Configure Supervisor Autostart
-
-systemctl enable supervisor.service
-service supervisor start
-
-# Configure Swap Disk
-
-if [ -f /swapfile ]; then
-    echo "Swap exists."
-else
-    fallocate -l $SWAP_SIZE /swapfile
-    chmod 600 /swapfile
-    mkswap /swapfile
-    swapon /swapfile
-    echo "/swapfile none swap sw 0 0" >> /etc/fstab
-    echo "vm.swappiness=30" >> /etc/sysctl.conf
-    echo "vm.vfs_cache_pressure=50" >> /etc/sysctl.conf
-fi
-
 # Install Base PHP Packages
 
 apt-get install -y --force-yes php7.0-cli php7.0-dev \
