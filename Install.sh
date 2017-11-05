@@ -15,17 +15,19 @@ echo " ============================================================"
 echo ""
 # ============================ LETS MAGIC BEGINS =========================================================================================
 # === WEB SERVER DATA ===
-SERVER_NAME="xxx"
+MYIP=($1)
+SERVER_NAME=($2)
 SERVER_IP=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
 
 USER1='honeycomb01'
 USER2='honeycomb02'
 USER3='honeycomb03'
-SUDO_PASSWORD="**************"
-MYSQL_ROOT_PASSWORD="****************"
+SUDO_PASSWORD="greatway@123"
+VNCSERVER_PASSWORD="Win@233"
+MYSQL_ROOT_PASSWORD="bestway@123"
 
 # SSH access via password will be disabled. Use keys instead.
-PUBLIC_SSH_KEYS="ssh-rsa AAAAB3NzaC1yc2EAAAADAQA...."
+PUBLIC_SSH_KEYS="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC6tFAz2cweXLFl95dLZWhhrsFODUm0Ic1l36B9IEZmkh43XKHzVWF6fiPsXmENv66ZUs+LJcgLNg34CDEfJ4+KBI6L8guAxc4nel30GSg7fo1NdtzedcbK+YVhSwtMi/Bv9jhXlBNvnSAC3lCtFzejb7lQTPqvf5ufgyTETeTkZdylsqHXD/5wug6nrYs0bNoSZc7LC/p7lmu50MckI8+aIwDjRjqRdayUUcvC8A9KQGWg79LwtE5SllugbdgH2jcyIZFj4hpkZegwXkVsaM+yu9T/oGhRXxXbZORYssdCOOD0M4oQofbrelm9fbRmHzSFtKQqxzQreMPgOSec4VLT bigbee"
 
 # if vps not contains swap file - create it
 SWAP_SIZE="1G"
@@ -33,36 +35,13 @@ SWAP_SIZE="1G"
 TIMEZONE="Etc/GMT+0" # lits of avaiable timezones: ls -R --group-directories-first /usr/share/zoneinfo
 
 # =================== SETUP VPS  ===================================================================
-
 # Prefer IPv4 over IPv6 - make apt-get faster
-
 sudo sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /etc/gai.conf
 
 # Upgrade The Base Packages
 apt-get update
 apt-get upgrade -y
 
-# Add A Few PPAs To Stay Current
-
-apt-get install -y --force-yes software-properties-common
-
-apt-add-repository ppa:nginx/development -y
-apt-add-repository ppa:chris-lea/redis-server -y
-apt-add-repository ppa:ondrej/apache2 -y
-apt-add-repository ppa:ondrej/php -y
-
-# Update Package Lists
-
-apt-get update
-
-# Base Packages
-
-apt-get install -y --force-yes build-essential curl fail2ban gcc git libmcrypt4 libpcre3-dev \
-make python2.7 python-pip supervisor ufw unattended-upgrades unzip whois zsh mc p7zip-full htop
-
-# Install Python Httpie
-
-pip install httpie
 
 # Disable Password Authentication Over SSH
 
@@ -130,7 +109,7 @@ ssh-keyscan -H bitbucket.org >> /home/$USER1/.ssh/known_hosts
 
 # Setup Site Directory Permissions
 
-chown -R $USER1:$USER1 /home/$USER1
+sudo chown -R $USER1:$USER1 /home/$USER1
 chmod -R 755 /home/$USER1
 chmod 600 /home/$USER1/.ssh/id_rsa
 
@@ -172,7 +151,7 @@ ssh-keygen -f /home/$USER2/.ssh/id_rsa -t rsa -N ''
 
 # Setup Site Directory Permissions
 
-chown -R $USER2:$USER2 /home/$USER2
+sudo chown -R $USER2:$USER2 /home/$USER2
 chmod -R 755 /home/$USER2
 chmod 600 /home/$USER2/.ssh/id_rsa
 
@@ -214,7 +193,7 @@ ssh-keygen -f /home/$USER3/.ssh/id_rsa -t rsa -N ''
 
 # Setup Site Directory Permissions
 
-chown -R $USER3:$USER3 /home/$USER3
+sudo chown -R $USER3:$USER3 /home/$USER3
 chmod -R 755 /home/$USER3
 chmod 600 /home/$USER3/.ssh/id_rsa
 
@@ -241,9 +220,15 @@ EOF
 
 # Setup UFW Firewall
 
+IP="${MYIP[0]}"
 ufw allow 22
 ufw allow 80
 ufw allow 443
+sudo ufw allow from $IP to any port 5901
+sudo ufw allow from $IP to any port 5902
+sudo ufw allow from $IP to any port 5903
+sudo ufw allow from $IP to any port 5904
+sudo ufw allow from $IP to any port 5905
 ufw --force enable
 
 # Allow FPM Restart
@@ -269,45 +254,11 @@ else
     echo "vm.vfs_cache_pressure=50" >> /etc/sysctl.conf
 fi
 
-sudo su
 cd /home/
 ##PREPARE VNC Server with multiple users
 sudo apt update && sudo apt upgrade -y && sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel expect -y
-#then add users
-#Set vncserver root password
-/usr/bin/expect << EOF
-set timeout -1
-spawn vncpasswd
-match_max 100000
-expect -exact "Using password file /root/.vnc/passwd\r
-Password: "
-send -- "Win@123\r"
-expect -exact "\r
-Verify:   "
-send -- "Win@123\r"
-expect -exact "\r
-Would you like to enter a view-only password (y/n)? "
-send -- "n\r"
-expect eof
-exit
-EOF
 
-#vncserver -kill :1
-#mv /root/.vnc/xstartup /root/.vnc/xstartup.backup
-#nano /root/.vnc/xstartup
-echo '#!/bin/bash
-unset SESSION_MANAGER
-[ -r ~/.Xresources ] && xrdb ~/.Xresources
-autocutsel -fork
-startxfce4 &
-' > /root/.vnc/xstartup
-
-#make it executable:  
-sudo chmod +x /root/.vnc/xstartup
-sudo vncserver :1
-
-
-
+#set root vnc passwd
 echo '#!/bin/sh
 myuser="root"
 mypasswd="1"
@@ -319,6 +270,17 @@ sudo chmod 777 /home/setVncRootPasswd.sh
 sudo /home/./setVncRootPasswd.sh
 sudo rm -rf /home/setVncRootPasswd.sh
 
+#create vnc startup for root user
+echo '#!/bin/bash
+unset SESSION_MANAGER
+[ -r ~/.Xresources ] && xrdb ~/.Xresources
+autocutsel -fork
+startxfce4 &' > /root/.vnc/xstartup
+#make it executable:  
+sudo chmod +x /root/.vnc/xstartup
+
+
+#set vnc password for other user
 echo '#!/bin/sh    
 myuser="$1"
 mypasswd="1"
@@ -327,90 +289,93 @@ echo $mypasswd | vncpasswd -f > /home/$myuser/.vnc/passwd
 chown -R $myuser:$myuser /home/$myuser/.vnc
 chmod 0600 /home/$myuser/.vnc/passwd' > /home/setVncUserPasswd.sh
 sudo chmod 777 /home/setVncUserPasswd.sh
-sudo rm -rf /home/setVncUserPasswd.sh
-#reset root vnc passwd
+
 
 #USER1
-#Run command in other user by using
-#su user -c "command"
-#or
-#sudo -u user "command"
-su - $USER1 -c "cd /home/"
 #install necessary stuff for desktop
 su - $USER1 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
-#setVncPasswd.sh
-#$ ./setVncPasswd <myuser> <mypasswd>
-#su - $USER1 -c "sudo chown -R $USER1 /home/$USER1/setVncPasswd.sh && sudo chmod 777 /home/$USER1/setVncPasswd.sh"
-su - $USER1 -c "sudo /home/./setVncUserPasswd.sh honeycomb01"
-#su - $USER1 -c "rm -rf /home/$USER1/setVncPasswd.sh"
-#su - $USER1 -c "vncserver -kill :2"
-#su - $USER1 -c "mv /home/$USER1/.vnc/xstartup /home/$USER1/.vnc/xstartup.backup"
-#nano ~/.vnc/xstartup
+#set honeycomb01 vnc passwd
+echo '#!/bin/sh
+myuser="honeycomb01"
+mypasswd="1"
+mkdir -p /home/$myuser/.vnc
+echo $mypasswd | vncpasswd -f > /home/$myuser/.vnc/passwd
+chown -R $myuser:$myuser /home/$myuser/.vnc
+chmod 0600 /home/$myuser/.vnc/passwd' > /home/setVncUSER1Passwd.sh
+sudo chmod 777 /home/setVncUSER1Passwd.sh
+sudo /home/./setVncUSER1Passwd.sh
+sudo rm -rf /home/setVncUSER1Passwd.sh
+
+#create vnc startup for USER1
 echo '#!/bin/bash
 unset SESSION_MANAGER
 [ -r ~/.Xresources ] && xrdb ~/.Xresources
 autocutsel -fork
-startxfce4 &
-' > /home/$USER1/.vnc/xstartup
+startxfce4 &' > /home/$USER1/.vnc/xstartup
 #make it executable:  
-su - $USER1 -c "sudo chown -R $USER1 /home/$USER1/.vnc/xstartup && sudo chmod 777 /home/$USER1/.vnc/xstartup"
-su - $USER2 -c "vncserver :2"
+sudo chown -R $USER1 /home/$USER1/.vnc/xstartup
+sudo chmod 777 /home/$USER1/.vnc/xstartup
+#Start vncserver
+su - $USER1 -c "vncserver :2"
+
 
 #USER2
-#Run command in other user by using
-#su user -c "command"
-#or
-#sudo -u user "command"
-su - $USER2 -c "cd /home/"
 #install necessary stuff for desktop
 su - $USER2 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
-#setVncPasswd.sh
-#$ ./setVncPasswd <myuser> <mypasswd>
-#su - $USER2 -c "sudo chown -R $USER2 /home/$USER2/setVncPasswd.sh && sudo chmod 777 /home/$USER2/setVncPasswd.sh"
-su - $USER2 -c "sudo /home/./setVncUserPasswd.sh honeycomb02"
-#su - $USER2 -c "rm -rf /home/$USER2/setVncPasswd.sh"
-#su - $USER2 -c "vncserver -kill :3"
-#su - $USER2 -c "mv /home/$USER2/.vnc/xstartup /home/$USER2/.vnc/xstartup.backup"
-#nano ~/.vnc/xstartup
+#set honeycomb02 vnc passwd
+echo '#!/bin/sh
+myuser="honeycomb02"
+mypasswd="1"
+mkdir -p /home/$myuser/.vnc
+echo $mypasswd | vncpasswd -f > /home/$myuser/.vnc/passwd
+chown -R $myuser:$myuser /home/$myuser/.vnc
+chmod 0600 /home/$myuser/.vnc/passwd' > /home/setVncUSER2Passwd.sh
+sudo chmod 777 /home/setVncUSER2Passwd.sh
+sudo /home/./setVncUSER2Passwd.sh
+sudo rm -rf /home/setVncUSER2Passwd.sh
+
+#create vnc startup for USER2
 echo '#!/bin/bash
 unset SESSION_MANAGER
 [ -r ~/.Xresources ] && xrdb ~/.Xresources
 autocutsel -fork
-startxfce4 &
-' > /home/$USER2/.vnc/xstartup
+startxfce4 &' > /home/$USER2/.vnc/xstartup
 #make it executable:  
-su - $USER2 -c "sudo chown -R $USER2 /home/$USER2/.vnc/xstartup && sudo chmod 777 /home/$USER2/.vnc/xstartup"
+sudo chown -R $USER2 /home/$USER2/.vnc/xstartup
+sudo chmod 777 /home/$USER2/.vnc/xstartup
+#Start vncserver
 su - $USER2 -c "vncserver :3"
 
 #USER3
-#Run command in other user by using
-#su user -c "command"
-#or
-#sudo -u user "command"
-su - $USER3 -c "cd /home/"
 #install necessary stuff for desktop
 su - $USER3 -c "sudo apt install gnome-core xfce4 xfce4-goodies tightvncserver autocutsel -y"
-#setVncPasswd.sh
-#$ ./setVncPasswd <myuser> <mypasswd>
-#su - $USER3 -c "sudo chown -R $USER3 /home/$USER3/setVncPasswd.sh && sudo chmod 777 /home/$USER3/setVncPasswd.sh"
-su - $USER3 -c "sudo /home/./setVncUserPasswd.sh honeycomb03"
-#su - $USER3 -c "rm -rf /home/$USER3/setVncPasswd.sh"
-#su - $USER3 -c "vncserver -kill :4"
-#su - $USER3 -c "mv /home/$USER3/.vnc/xstartup /home/$USER3/.vnc/xstartup.backup"
-#nano ~/.vnc/xstartup
+#set honeycomb03 vnc passwd
+echo '#!/bin/sh
+myuser="honeycomb03"
+mypasswd="1"
+mkdir -p /home/$myuser/.vnc
+echo $mypasswd | vncpasswd -f > /home/$myuser/.vnc/passwd
+chown -R $myuser:$myuser /home/$myuser/.vnc
+chmod 0600 /home/$myuser/.vnc/passwd' > /home/setVncUSER3Passwd.sh
+sudo chmod 777 /home/setVncUSER3Passwd.sh
+sudo /home/./setVncUSER3Passwd.sh
+sudo rm -rf /home/setVncUSER3Passwd.sh
+
+#create vnc startup for USER3
 echo '#!/bin/bash
 unset SESSION_MANAGER
 [ -r ~/.Xresources ] && xrdb ~/.Xresources
 autocutsel -fork
-startxfce4 &
-' > /home/$USER3/.vnc/xstartup
+startxfce4 &' > /home/$USER3/.vnc/xstartup
 #make it executable:  
-su - $USER3 -c "sudo chown -R $USER3 /home/$USER3/.vnc/xstartup && sudo chmod 777 /home/$USER3/.vnc/xstartup"
+sudo chown -R $USER3 /home/$USER3/.vnc/xstartup
+sudo chmod 777 /home/$USER3/.vnc/xstartup
+#Start vncserver
 su - $USER3 -c "vncserver :4"
 
 
 #So, switch to root (it is just more easier) and then create vncserver folder and create file as vncservers.conf:
-########################################
+#################################################################################################################
 mkdir -p /etc/vncserver
 echo 'VNCSERVERS="1:root 2:honeycomb01 3:honeycomb02 4:honeycomb03"
 VNCSERVERARGS[1]="-geometry 1920x1068 -depth 16"
@@ -505,8 +470,6 @@ service vncserver start
 #netstat -nlp | grep vnc
 
 
-
-
 echo "(1/6) Update the base system & Install traffic exchange apps..."
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Install some traffic exchange script on VPS ubuntu 16.04.
@@ -542,13 +505,13 @@ sudo chown honeycomb01 -R /home/honeycomb01/Desktop/* && sudo chmod ugo+x -R /ho
 #Otohits (Need 1GB memory)
 # wget http://www.otohits.net/dl/OtohitsApp_3107_Linux.zip && unzip OtohitsApp_3107_Linux.zip
 
-#Libnss3 (kilohits) libcurl3 (Otohits) firefox(websyndic)
-apt install libnss3 libcurl3 firefox -y
+#Libnss3 (kilohits) libcurl3 (Otohits)
+apt install libnss3 libcurl3 -y
 #Have the Hitleap, Kilohits, Otohits run when reboot:
 mkdir /root/.config/autostart
 #sudo nano /usr/local/bin/autostart.sh
 echo '#!/bin/bash
-export DISPLAY=:1 && firefox | /home/OtohitsApp/./OtohitsApp | /home/kilohits.com-viewer-linux-x64/./kilohits.com-viewer | (/home/app/./HitLeap-Viewer && wait)
+export DISPLAY=:1 && /root/Desktop/OtohitsApp/./OtohitsApp | /root/Desktop/kilohits.com-viewer-linux-x64/./kilohits.com-viewer | (/root/Desktop/app/./HitLeap-Viewer && wait) > /dev/null 2>&1
 ' >> /usr/local/bin/autostart.sh
 
 chmod ugo+x /usr/local/bin/autostart.sh
@@ -580,12 +543,22 @@ sudo apt-get install winetricks -y
 sudo apt-get -f install
 sudo apt-get install gdebi -y
 apt-get install python-gtk2 -y
-sudo dpkg -i /home/mmo/crossover_13.1.3-1/crossover_13.1.3-1.deb
-sudo apt-get -f install
-sudo dpkg -i /home/mmo/crossover_13.1.3-1/crossover_13.1.3-1.deb
+#Auto respond Y when run command: sudo apt-get install -f
+/usr/bin/expect << EOF
+global spawn_id
+set timeout -1
+spawn sudo apt-get install -f
+match_max 100000
+expect "*Do you want to continue?* "
+send -- "Y\r"
+expect eof
+EOF
+#run install CrossOver
+sudo dpkg -i /root/Desktop/mmo/crossover_13.1.3-1/crossover_13.1.3-1.deb
+#sudo gdebi /root/Desktop/mmo/crossover_13.1.3-1/crossover_13.1.3-1.deb 
 #To Reconfigure: sudo dpkg-reconfigure /home/mmo/crossover_13.1.3-1/crossover_13.1.3-1.deb
 #CRACK CrossOver by copy winewrapper.exe.so file to overwriting existing file in this dir: /opt/cxoffice/lib/wine
-cp -rf /home/mmo/crossover_13.1.3-1/crack/winewrapper.exe.so /opt/cxoffice/lib/wine/
+cp -rf /root/Desktop/mmo/crossover_13.1.3-1/crack/winewrapper.exe.so /opt/cxoffice/lib/wine/
 #Uninstall CrossOver: 
 #sudo /opt/cxoffice/bin/cxuninstall
 #cd ~/Desktop
@@ -679,7 +652,7 @@ export TMPDIR TMP TEMP
 #Type these commands one by one for add proxychains-ng repository
 #sudo add-apt-repository ppa:hda-me/proxychains-ng
 #sudo apt-get update
-cd /home
+cd /home/
 #or cd /srv 
 git clone https://github.com/rofl0r/proxychains-ng.git
 cd proxychains-ng
@@ -737,48 +710,46 @@ cp /etc/proxychains.conf /etc/honeycomb03.conf
 #cd ~/
 #git clone https://github.com/FulbrightNguyen/dragonball.git
 #cd dragonball
- chmod ugo+x /home/proxy/*
-# cd /home/proxy
-# ./proxy_scraper.sh
-#login honeycomb01 user
- su $USER1
- su $USER1 -c "cd /home/"
+chmod ugo+x /home/proxy/*
 #Have the proxychains4 run when reboot:
 #nano ~/autoHoneycomb01
 echo '#!/bin/bash
+export DISPLAY=:2
 proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/app/HitLeap-Viewer && proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer > /dev/null 2>&1
 ' >> /home/honeycomb01/autoHoneycomb01
 chmod ugo+x /home/honeycomb01/autoHoneycomb01
+sudo chown $USER1 /home/honeycomb01/autoHoneycomb01
 #At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
 #echo '0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/autoHoneycomb01' >> /etc/crontab
-sed -i '$ a 0 * * * * export DISPLAY=:2 && honeycomb01 /home/honeycomb01/./autoHoneycomb01' /etc/crontab
+sed -i '$ a 0 */3 * * * honeycomb01 /home/honeycomb01/autoHoneycomb01' /etc/crontab
 
 
 #login honeycomb02 user
-su $USER2
-su $USER2 -c "cd /home/"
 #Have the proxychains4 run when reboot:
 #nano ~/autoHoneycomb02
 echo '#!/bin/bash
+export DISPLAY=:3
 proxychains4 -f /etc/honeycomb02.conf /home/honeycomb02/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer > /dev/null 2>&1
 ' >> /home/honeycomb02/autoHoneycomb02
 chmod ugo+x /home/honeycomb02/autoHoneycomb02
+sudo chown $USER2 /home/honeycomb02/autoHoneycomb02
 #At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
 #echo '0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autoHoneycomb02' >> /etc/crontab
-sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/./autoHoneycomb02' /etc/crontab
+sed -i '$ a 0 */3 * * * honeycomb02 /home/honeycomb02/autoHoneycomb02' /etc/crontab
+
 
 #login honeycomb03 user
-su $USER3
-su $USER3 -c "cd /home/"
 #Have the proxychains4 run when reboot:
 #nano ~/autoHoneycomb03
 echo '#!/bin/bash
-proxychains4 -f /etc/honeycomb03.conf /home/honeycomb02/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer > /dev/null 2>&1
-' >> /home/honeycomb02/autoHoneycomb03
-chmod ugo+x /home/honeycomb02/autoHoneycomb03
+export DISPLAY=:4
+proxychains4 -f /etc/honeycomb03.conf /home/honeycomb03/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer > /dev/null 2>&1
+' >> /home/honeycomb03/autoHoneycomb03
+chmod ugo+x /home/honeycomb03/autoHoneycomb03
+sudo chown $USER3 /home/honeycomb03/autoHoneycomb03
 #At the bottom of crontab file add the line then save the file below: (Ctrl+w+v)
-#echo '0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/autoHoneycomb03' >> /etc/crontab
-sed -i '$ a 0 * * * * export DISPLAY=:3 && honeycomb02 /home/honeycomb02/./autoHoneycomb03' /etc/crontab
+#echo '0 * * * * export DISPLAY=:4 && honeycomb02 /home/honeycomb03/autoHoneycomb03' >> /etc/crontab
+sed -i '$ a 0 */3 * * * honeycomb03 /home/honeycomb03/autoHoneycomb03' /etc/crontab
 
 
 
@@ -796,7 +767,9 @@ sudo apt-get install cpulimit
 cd /home/mmo/
 #It is recommended to install two browsers to switch at any time
 #Install Firefox:
-#sudo apt-get install firefox -y
+sudo apt-get install firefox -y
+#Change firefox as default browser
+xdg-settings set default-web-browser firefox.desktop
 #Install chrome (optional)
 sudo wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 sudo dpkg -i google-chrome-stable_current_amd64.deb
@@ -804,7 +777,7 @@ sudo apt-get -f install -y
 sudo dpkg -i google-chrome-stable_current_amd64.deb
 #run Google Chrome as root
 #Edit the /usr/bin/google-chrome and add the "--no-sandbox" or "–user-data-dir" at the end of the last line
-sed -i 's/\bexec -a "$0" "$HERE/chrome" "$@"\b/& --no-sandbox/' /usr/bin/google-chrome
+sed -i -e "s@\"\$\@\"@\"\$\@\" --no-sandbox@g" /usr/bin/google-chrome
 #\b: a zero-width word boundary
 #&: refer to that portion of the pattern space which matched
 #Install Flash
@@ -1193,7 +1166,30 @@ echo "(5/6) Set Up Web Server Application for Production"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # =================== LET'S GET STARTED ==========================================================================================
 # Install Base PHP Packages
+cd /home/
+# Add A Few PPAs To Stay Current
 
+apt-get install -y --force-yes software-properties-common
+
+apt-add-repository ppa:nginx/development -y
+apt-add-repository ppa:chris-lea/redis-server -y
+apt-add-repository ppa:ondrej/apache2 -y
+apt-add-repository ppa:ondrej/php -y
+
+# Update Package Lists
+
+apt-get update
+
+# Base Packages
+
+apt-get install -y --force-yes build-essential curl fail2ban gcc git libmcrypt4 libpcre3-dev \
+make python2.7 python-pip supervisor ufw unattended-upgrades unzip whois zsh mc p7zip-full htop
+
+# Install Python Httpie
+
+pip install httpie
+
+#php install
 apt-get install -y --force-yes php7.0-cli php7.0-dev \
 php-sqlite3 php-gd \
 php-curl php7.0-dev \
@@ -1341,20 +1337,45 @@ service nginx restart
 service nginx reload
 
 # Add User To www-data Group
+usermod -a -G www-data root
+id root
+groups root
 
-usermod -a -G www-data $USER
-id $USER
-groups $USER
+usermod -a -G www-data $USER1
+id $USER1
+groups $USER1
 
 # Install Node.js
 
-curl --silent --location https://deb.nodesource.com/setup_5.x | bash -
+curl --silent --location https://deb.nodesource.com/setup_6.x | bash -
 
 apt-get update
 
 sudo apt-get install -y --force-yes nodejs
 
-npm install -g pm2
+
+#Install pm2
+
+sudo npm install -g pm2
+#However, in order to keep the npm start - localhost with port 3000 or 8080 server always alive, use pm2:
+#Then, change directory (cd) to webapp folder: (assume that using npm start for starting nodejs app)
+pm2 start npm -- start
+#start pm2 when reboot 
+pm2 startup systemd 
+#Run this command to run your application as a service by typing the following:
+sudo env PATH=$PATH:/usr/local/bin pm2 startup -u root
+pm2 save
+#Useful pm2 commands:
+#pm2 list all
+#pm2 stop all
+#pm2 start all
+#pm2 delete 0
+#(use delete 0 to delete the first command from pm2 list with ID 0) 
+#(if using kind of npm run:start to start app, then it should be: pm2 start npm -- run:start)
+#After that, this command will be remembered by pm2! 
+
+#Install gulp
+
 npm install -g gulp
 
 # Set The Automated Root Password
@@ -1438,10 +1459,12 @@ echo "alias glog='pm2 logs'" >> ~/.bashrc
 echo "alias gstart='pm2 start'" >> ~/.bashrc
 echo "alias gstop='pm2 stop'" >> ~/.bashrc
 echo ""
+
 # Finishing Up
 apt-get -y autoremove
 apt-get -y clean
 apt-get -y autoclean
+
 echo " ============================================================"
 echo "                   DRAGONBALL SETUP complete!"
 echo ""
