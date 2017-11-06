@@ -22,12 +22,12 @@ SERVER_IP=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
 USER1='honeycomb01'
 USER2='honeycomb02'
 USER3='honeycomb03'
-SUDO_PASSWORD="greatway@123"
-VNCSERVER_PASSWORD="Win@233"
-MYSQL_ROOT_PASSWORD="bestway@123"
+SUDO_PASSWORD="xxxxxxxx"
+VNCSERVER_PASSWORD="xxxxxxxx"
+MYSQL_ROOT_PASSWORD="xxxxxxxxx"
 
 # SSH access via password will be disabled. Use keys instead.
-PUBLIC_SSH_KEYS="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC6tFAz2cweXLFl95dLZWhhrsFODUm0Ic1l36B9IEZmkh43XKHzVWF6fiPsXmENv66ZUs+LJcgLNg34CDEfJ4+KBI6L8guAxc4nel30GSg7fo1NdtzedcbK+YVhSwtMi/Bv9jhXlBNvnSAC3lCtFzejb7lQTPqvf5ufgyTETeTkZdylsqHXD/5wug6nrYs0bNoSZc7LC/p7lmu50MckI8+aIwDjRjqRdayUUcvC8A9KQGWg79LwtE5SllugbdgH2jcyIZFj4hpkZegwXkVsaM+yu9T/oGhRXxXbZORYssdCOOD0M4oQofbrelm9fbRmHzSFtKQqxzQreMPgOSec4VLT bigbee"
+PUBLIC_SSH_KEYS="ssh-rsa AAAAB3NzaC........................................"
 
 # if vps not contains swap file - create it
 SWAP_SIZE="1G"
@@ -200,25 +200,6 @@ chmod 600 /home/$USER3/.ssh/id_rsa
 echo 'honeycomb03 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 
-# Setup Unattended Security Upgrades
-
-cat > /etc/apt/apt.conf.d/50unattended-upgrades << EOF
-Unattended-Upgrade::Allowed-Origins {
-    "Ubuntu xenial-security";
-};
-Unattended-Upgrade::Package-Blacklist {
-    //
-};
-EOF
-
-cat > /etc/apt/apt.conf.d/10periodic << EOF
-APT::Periodic::Update-Package-Lists "1";
-APT::Periodic::Download-Upgradeable-Packages "1";
-APT::Periodic::AutocleanInterval "7";
-APT::Periodic::Unattended-Upgrade "1";
-EOF
-
-# Setup UFW Firewall
 
 IP="${MYIP[0]}"
 ufw allow 22
@@ -582,9 +563,9 @@ sudo usermod -aG crontab honeycomb02
 sudo usermod -aG crontab honeycomb03
 sudo chmod ug+x /etc/crontab
 #Task management
-apt install htop
+sudo apt install htop
 #Generate a report of the network usage 
-apt-get install vnstat
+sudo apt-get install vnstat
 #To monitor the bandwidth usage in realtime, use: vnstat -l -i eth0   
 #Disable vps from going to sleep 
 sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
@@ -715,7 +696,7 @@ chmod ugo+x /home/proxy/*
 #nano ~/autoHoneycomb01
 echo '#!/bin/bash
 export DISPLAY=:2
-proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/app/HitLeap-Viewer && proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer > /dev/null 2>&1
+proxychains4 -f /etc/honeycomb01.conf /home/honeycomb01/Desktop/kilohits.com-viewer-linux-x64/kilohits.com-viewer > /dev/null 2>&1
 ' >> /home/honeycomb01/autoHoneycomb01
 chmod ugo+x /home/honeycomb01/autoHoneycomb01
 sudo chown $USER1 /home/honeycomb01/autoHoneycomb01
@@ -768,8 +749,6 @@ cd /home/mmo/
 #It is recommended to install two browsers to switch at any time
 #Install Firefox:
 sudo apt-get install firefox -y
-#Change firefox as default browser
-xdg-settings set default-web-browser firefox.desktop
 #Install chrome (optional)
 sudo wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 sudo dpkg -i google-chrome-stable_current_amd64.deb
@@ -778,8 +757,19 @@ sudo dpkg -i google-chrome-stable_current_amd64.deb
 #run Google Chrome as root
 #Edit the /usr/bin/google-chrome and add the "--no-sandbox" or "–user-data-dir" at the end of the last line
 sed -i -e "s@\"\$\@\"@\"\$\@\" --no-sandbox@g" /usr/bin/google-chrome
-#\b: a zero-width word boundary
-#&: refer to that portion of the pattern space which matched
+
+#Change firefox as default browser
+/usr/bin/expect << EOF
+global spawn_id
+set timeout -1
+spawn sudo update-alternatives --config x-www-browser
+match_max 100000
+expect "*or type selection number:* "
+send -- "1\r"
+expect eof
+EOF
+sudo xdg-settings set default-web-browser firefox.desktop
+
 #Install Flash
 #Method:
 tar zxvf install_flash_player_11_linux.x86_64.tar.gz
@@ -1461,6 +1451,7 @@ echo "alias gstop='pm2 stop'" >> ~/.bashrc
 echo ""
 
 # Finishing Up
+
 apt-get -y autoremove
 apt-get -y clean
 apt-get -y autoclean
